@@ -5,6 +5,8 @@ VisualStudioVersion = 17.3.32922.545
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaIngesterCore", "MediaIngesterCore\MediaIngesterCore.csproj", "{52075A77-E362-438F-AA6D-667F566DFAA8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaIngesterCLI", "MediaIngesterCLI\MediaIngesterCLI.csproj", "{7A55DD5C-FC72-4330-B9C6-60A65ABBDEE0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{52075A77-E362-438F-AA6D-667F566DFAA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{52075A77-E362-438F-AA6D-667F566DFAA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{52075A77-E362-438F-AA6D-667F566DFAA8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A55DD5C-FC72-4330-B9C6-60A65ABBDEE0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A55DD5C-FC72-4330-B9C6-60A65ABBDEE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A55DD5C-FC72-4330-B9C6-60A65ABBDEE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A55DD5C-FC72-4330-B9C6-60A65ABBDEE0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
