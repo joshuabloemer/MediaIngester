@@ -8,6 +8,9 @@ using MediaIngesterCore.Parsing.SyntaxTree;
 
 namespace MediaIngesterCore.Ingesting
 {
+    /// <summary>
+    /// Represents the data needed for an ingest
+    /// </summary>
     internal class IngestJob
     {
         /// <summary>
