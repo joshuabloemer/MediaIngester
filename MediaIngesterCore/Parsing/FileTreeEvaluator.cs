@@ -3,17 +3,14 @@ using MediaIngesterCore.Parsing.SyntaxTree.Conditions.Types;
 
 namespace MediaIngesterCore.Parsing
 {
-    class FileTreeEvaluator
+    static class FileTreeEvaluator
     {
-
-        public FileTreeEvaluator() { }
-
-        public object Evaluate(SyntaxNode node)
+        public static object Evaluate(SyntaxNode node)
         {
             switch (node)
             {
-                case BlockNode b: return blockNode(b);
-                case RuleNode r: return ruleNode(r);
+                case BlockNode b: return BlockNode(b);
+                case RuleNode r: return RuleNode(r);
                 case PathNode p: return PathToString(p);
                 case StringNode s: return s.Value;
                 case ExtensionNode: return "extension";
@@ -31,7 +28,7 @@ namespace MediaIngesterCore.Parsing
             throw (new Exception($"Unknown node type {node.GetType()}"));
         }
 
-        private string PathToString(PathNode path)
+        private static string PathToString(PathNode path)
         {
             string result = "";
             foreach (SyntaxNode part in path.Parts)
@@ -41,7 +38,7 @@ namespace MediaIngesterCore.Parsing
             return result;
         }
 
-        private List<string> ruleNode(RuleNode r)
+        private static List<string> RuleNode(RuleNode r)
         {
             List<String> result = new List<string>();
 
@@ -67,7 +64,7 @@ namespace MediaIngesterCore.Parsing
             return result;
         }
 
-        private List<String> blockNode(BlockNode b)
+        private static List<String> BlockNode(BlockNode b)
         {
             List<String> result = new List<string>();
             foreach (RuleNode rule in b.Statements)
