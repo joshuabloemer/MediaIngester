@@ -35,7 +35,7 @@ namespace MediaIngesterCore.Ingesting
             this.Job = job;
         }
         
-        public Task Ingest(CancellationToken cancellationToken)
+        public Task Ingest(CancellationToken cancellationToken, ManualResetEvent resetEvent)
         {
             if (this.Status != IngestStatus.Ready)
             {
@@ -48,6 +48,12 @@ namespace MediaIngesterCore.Ingesting
                     this.Status = IngestStatus.Ingesting;
                     for (int i = 0; i < this.Job.Files.Count; i++)
                     {
+                        if (!resetEvent.WaitOne(0))
+                        {
+                            this.Status = IngestStatus.Paused;
+                        }
+                        resetEvent.WaitOne();
+                        this.Status = IngestStatus.Ingesting;
                         if (cancellationToken.IsCancellationRequested)
                         {
                             this.Status = IngestStatus.Canceled;
@@ -81,7 +87,6 @@ namespace MediaIngesterCore.Ingesting
             }
             Directory.CreateDirectory(destination);
             string fileName = Path.GetFileName(filePath);
-            string directoryPath = Path.GetDirectoryName(filePath)!;
             int duplicates = 0;
             bool skipped = false;
             bool renamed = false;

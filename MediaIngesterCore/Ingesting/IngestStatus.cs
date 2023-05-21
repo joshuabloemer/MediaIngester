@@ -5,6 +5,7 @@
         Ready,
         Ingesting,
         Completed,
+        Paused,
         Failed,
         Canceled
     }
