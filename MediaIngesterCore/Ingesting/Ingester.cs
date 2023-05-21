@@ -35,6 +35,13 @@ namespace MediaIngesterCore.Ingesting
             this.Job = job;
         }
         
+        /// <summary>
+        /// Starts the ingest
+        /// </summary>
+        /// <param name="cancellationToken">A cancellation token that can be used to cancel the ingest.</param>
+        /// <param name="resetEvent">A ManualResetEvent that can be used to pause and resume the ingest</param>
+        /// <returns>A reference to the ingest task</returns>
+        /// <exception cref="InvalidOperationException">If the ingest is already in progress</exception>
         public Task Ingest(CancellationToken cancellationToken, ManualResetEvent resetEvent)
         {
             if (this.Status != IngestStatus.Ready)
