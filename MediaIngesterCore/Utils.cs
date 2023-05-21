@@ -1,4 +1,5 @@
-﻿using MetadataExtractor.Formats.Exif;
+﻿using FastHashes;
+using MetadataExtractor.Formats.Exif;
 
 namespace MediaIngesterCore;
 
@@ -30,4 +31,38 @@ public static class Utils
         DateTime creationTime = File.GetCreationTime(path);
         return creationTime <= modifiedTime ? creationTime : modifiedTime;
     }
+    
+    /// <summary>
+    /// Checks if two files are the same (name independent)
+    /// </summary>
+    /// <param name="path1">The path of the first file</param>
+    /// <param name="path2">The path of the second file</param>
+    /// <returns><see langword="true"/> if the files are identical, <see langword="false"/> if the are not.</returns>
+    public static bool IsSameFile(string path1, string path2)
+    {
+        try
+        {
+            IEnumerable<MetadataExtractor.Directory> metadata1 = MetadataExtractor.ImageMetadataReader.ReadMetadata(path1);
+            IEnumerable<MetadataExtractor.Directory> metadata2 = MetadataExtractor.ImageMetadataReader.ReadMetadata(path2);
+            foreach (var directories in metadata1.Zip(metadata2, Tuple.Create))
+            {
+                foreach (var tags in directories.Item1.Tags.Zip(directories.Item2.Tags, Tuple.Create))
+                {
+                    if (tags.Item1.Description != tags.Item2.Description && tags.Item1.Name != "File Name" && tags.Item1.Name != "File Modified Date")
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+        catch (MetadataExtractor.ImageProcessingException)
+        {
+            FarmHash64 hashing = new FarmHash64();
+            byte[]? hash1 = hashing.ComputeHash(File.ReadAllBytes(path1));
+            byte[]? hash2 = hashing.ComputeHash(File.ReadAllBytes(path2));
+            return hash1.SequenceEqual(hash2);
+        }
+    }
+
 }
