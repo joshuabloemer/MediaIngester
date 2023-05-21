@@ -21,7 +21,10 @@ namespace MediaIngesterCore.Ingesting
         /// The path of the destination root directory
         /// </summary>
         public readonly string DestinationPath;
-        private readonly SyntaxNode rules;
+        /// <summary>
+        /// The rules to match against while ingesting
+        /// </summary>
+        public readonly SyntaxNode Rules;
         private readonly List<string> files = new();
         /// <summary>
         /// Total size of all files in the job (in bytes)
@@ -46,7 +49,7 @@ namespace MediaIngesterCore.Ingesting
         {
             this.DirectoryPath = directoryPath;
             this.DestinationPath = destinationPath;
-            this.rules = rules;
+            this.Rules = rules;
         }
         
         /// <summary>
