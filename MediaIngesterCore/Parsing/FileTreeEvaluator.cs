@@ -3,7 +3,7 @@ using MediaIngesterCore.Parsing.SyntaxTree.Conditions.Types;
 
 namespace MediaIngesterCore.Parsing
 {
-    static class FileTreeEvaluator
+    public static class FileTreeEvaluator
     {
         public static object Evaluate(SyntaxNode node)
         {

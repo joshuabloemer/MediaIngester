@@ -6,7 +6,7 @@ using static MediaIngesterCore.Utils;
 
 namespace MediaIngesterCore.Parsing
 {
-    class Evaluator
+    internal class Evaluator
     {
         public string FilePath { get; }
 

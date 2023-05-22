@@ -6,7 +6,7 @@ namespace MediaIngesterCore.Ingesting
     /// <summary>
     /// Represents a media ingest
     /// </summary>
-    internal class Ingester
+    public class Ingester
     {
         /// <summary>
         /// The job this ingester is working on

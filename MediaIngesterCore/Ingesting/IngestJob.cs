@@ -5,7 +5,7 @@ namespace MediaIngesterCore.Ingesting
     /// <summary>
     /// Represents the data needed for an ingest
     /// </summary>
-    internal class IngestJob
+    public class IngestJob
     {
         /// <summary>
         /// The path to the directory to ingest
