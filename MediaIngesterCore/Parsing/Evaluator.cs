@@ -16,7 +16,7 @@ namespace MediaIngesterCore.Parsing
 
         public Boolean RuleMatched { get; private set; } = false;
 
-        public Evaluator(string filePath)
+        internal Evaluator(string filePath)
         {
             this.FilePath = filePath;
             this.DateTaken = GetDateTaken(filePath);
