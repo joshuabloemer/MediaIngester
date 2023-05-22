@@ -9,11 +9,17 @@
   <ItemGroup>
     <PackageReference Include="FastHashes" Version="3.5.0" />
     <PackageReference Include="MetadataExtractor" Version="2.8.0" />
+    <PackageReference Include="Pegasus" Version="4.2.0-alpha0003" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="File\" />
     <Folder Include="Parsing\SyntaxTree\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Parsing\Grammar.peg" />
+    <PegGrammar Include="Parsing\Grammar.peg" />
   </ItemGroup>
 
 </Project>
