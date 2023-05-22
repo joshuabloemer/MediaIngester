@@ -19,7 +19,7 @@ public static class Utils
             // Search all exif subdirs for TagDateTimeOriginal 
             foreach (ExifSubIfdDirectory exif in metadata.OfType<ExifSubIfdDirectory>())
             {
-                string? dto = exif?.GetDescription(ExifDirectoryBase.TagDateTimeOriginal);
+                string? dto = exif.GetDescription(ExifDirectoryBase.TagDateTimeOriginal);
                 if (dto != null)
                     return DateTime.ParseExact(dto, "yyyy:MM:dd HH:mm:ss", null);
             }
