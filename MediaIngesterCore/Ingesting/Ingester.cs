@@ -29,6 +29,11 @@ namespace MediaIngesterCore.Ingesting
         {
             this.Job = job;
         }
+
+        public Task Ingest()
+        {
+            return this.Ingest(new CancellationToken(), new ManualResetEvent(true));
+        }
         
         /// <summary>
         /// Starts the ingest
@@ -63,7 +68,8 @@ namespace MediaIngesterCore.Ingesting
                         }
                         string filePath = this.Job.Files.ElementAt(i);
                         this.FileIngestStarted?.Invoke(this, new FileIngestStartedEventArgs(filePath, i));
-                        this.FileIngestCompleted?.Invoke(this,IngestFile(filePath, i));
+                        FileIngestCompletedEventArgs args = IngestFile(filePath, i);
+                        this.FileIngestCompleted?.Invoke(this,args);
                     }
                     this.Status = IngestStatus.Completed;
                 }
@@ -103,6 +109,7 @@ namespace MediaIngesterCore.Ingesting
                 duplicates++;
                 fileName = $"{Path.GetFileNameWithoutExtension(filePath)} ({duplicates}){Path.GetExtension(filePath)}";
             }
+            File.Copy(filePath, Path.Join(destination, fileName));
             return new FileIngestCompletedEventArgs(i,filePath, Path.Join(destination, fileName), skipped, renamed, evaluator.RuleMatched);
         }
     }
