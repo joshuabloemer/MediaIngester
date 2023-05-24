@@ -14,14 +14,17 @@ namespace MediaIngesterCLI
             Option<DirectoryInfo> sourcePath = new(
                 name: "--source",
                 description: "The source directory to ingest");
+            sourcePath.AddAlias("-s");
             
             Option<DirectoryInfo> destinationPath = new(
                 name: "--destination",
                 description: "The destination directory to ingest to");
+            destinationPath.AddAlias("-d");
             
             Option<FileInfo> rulesPath = new(
                 name: "--rules",
                 description: "The path of the rules file to use");
+            rulesPath.AddAlias("-r");
                 
             RootCommand rootCommand = new("A simple command line ingest tool");
 
