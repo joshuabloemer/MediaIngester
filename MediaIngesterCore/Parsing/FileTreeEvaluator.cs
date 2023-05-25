@@ -36,10 +36,12 @@ namespace MediaIngesterCore.Parsing
                 result = Path.Join(result, Convert.ToString(Evaluate(part)));
             }
             return result;
+            
         }
 
         private static List<string> RuleNode(RuleNode r)
         {
+            
             List<String> result = new List<string>();
 
             if (r.GetIndent() is not null)
