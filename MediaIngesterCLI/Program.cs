@@ -2,11 +2,11 @@
 using MediaIngesterCore.Parsing;
 using MediaIngesterCore.Ingesting;
 using System.CommandLine;
-using System.ComponentModel;
 using System.Text;
 
 namespace MediaIngesterCLI
 {
+    
     internal static class Program
     {
         private static int Main(string[] args)
@@ -27,27 +27,32 @@ namespace MediaIngesterCLI
             Argument<FileInfo> previewFilePath = new(
                 name: "file",
                 description: "The file to preview");
-            
-            // Argument<DirectoryInfo> previewDirectoryPath = new(
-            //     name: "directory",
-            //     description: "The directory to preview");
-                
+
             RootCommand rootCommand = new("A simple command line ingest tool");
 
             Command ingestCommand = new("ingest", "Ingest a folder")
             {
                 sourcePath,
                 destinationPath,
-                rulesPath,
+                rulesPath
             };
             rootCommand.AddCommand(ingestCommand);
-            ingestCommand.SetHandler(async (source, destination, rules) =>
+            
+            CancellationTokenSource tokenSource = new();
+            Console.CancelKeyPress += (sender, eventArgs) =>
             {
-                await Ingest(source, destination, rules);
+                Console.WriteLine("Cancelling ingest...");
+                tokenSource.Cancel();
+                eventArgs.Cancel = true;
+            };
+            CancellationToken cToken = tokenSource.Token;
+            ingestCommand.SetHandler(async (source, destination,rules) =>
+            { 
+                await Ingest(source, destination, rules,cToken);
             }, sourcePath, sourcePath, rulesPath);
-
-            Command previewCommand = new("preview", "Preview a folder");
-            Command previewFileCommand = new("file", "Preview a file")
+            
+            Command previewCommand = new("preview", "Preview the results of an ingest operation without executing it");
+            Command previewFileCommand = new("file", "Prints the ingest location of a file without ingesting it")
             {
                 previewFilePath,
                 rulesPath
@@ -58,8 +63,8 @@ namespace MediaIngesterCLI
             }, previewFilePath, rulesPath);
             previewCommand.AddCommand(previewFileCommand);
             rootCommand.AddCommand(previewCommand);
-            
-            Command previewDirectoryCommand = new("directory", "Preview a directory")
+            Command previewDirectoryCommand = new("directory", "Prints the file tree that would be created by " +
+                                                               "the rules file if all rules matched at least once")
             {
                 rulesPath
             };
@@ -119,14 +124,14 @@ namespace MediaIngesterCLI
             Evaluator evaluator = new Evaluator(filePath.FullName);
             return (string)evaluator.Evaluate(rules);
         }
-        private static async Task Ingest(DirectoryInfo sourcePath, DirectoryInfo destinationPath, FileInfo rulesPath)
+        private static async Task Ingest(DirectoryInfo sourcePath, DirectoryInfo destinationPath, FileInfo rulesPath, CancellationToken token)
         {
             
             Parser parser = new Parser();
             SyntaxNode rules;
             try
             {
-                rules = parser.Parse(await File.ReadAllTextAsync(rulesPath.FullName));
+                rules = parser.Parse(await File.ReadAllTextAsync(rulesPath.FullName, token));
             }
             catch (FormatException e)
             {
@@ -144,7 +149,7 @@ namespace MediaIngesterCLI
             ingester.FileIngestCompleted += OnFileIngestCompleted;
             
             Console.WriteLine($"Ingesting from {sourcePath} to {destinationPath}");
-            await ingester.Ingest();
+            await ingester.Ingest(token, new ManualResetEvent(true));
         }
         
         
