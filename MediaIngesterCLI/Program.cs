@@ -5,9 +5,9 @@ using MediaIngesterCLI.Commands;
 namespace MediaIngesterCLI
 {
     
-    internal static class Program
+    public static class Program
     {
-        private static int Main(string[] args)
+        public static int Main(string[] args)
         {
 
             RootCommand rootCommand = new("A simple command line ingest tool");

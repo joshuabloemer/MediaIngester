@@ -14,13 +14,15 @@ public class PreviewDirectoryCommand : Command
             description: "The rules file to use while ingesting");
         
         this.AddArgument(rulesPath);
-        this.SetHandler((rules) =>
+        this.SetHandler((context) =>
         {
-            Console.WriteLine(PreviewDirectory(rules));
-        },  rulesPath);
+            FileInfo rules = context.ParseResult.GetValueForArgument(rulesPath);
+            int exitCode = PreviewDirectory(rules);
+            context.ExitCode = exitCode;
+        });
     }
 
-    private static string PreviewDirectory(FileInfo rulesPath)
+    private static int PreviewDirectory(FileInfo rulesPath)
     {
         Parser parser = new Parser();
         ProgramNode rules;
@@ -31,22 +33,23 @@ public class PreviewDirectoryCommand : Command
         catch (FormatException e)
         {
             Console.WriteLine($"Error parsing rule file \"{rulesPath.FullName}\": {e.Message}");
-            return null;
+            return 1;
         }
 
-        List<String> paths =(List<String>)FileTreeEvaluator.Evaluate(rules.Block);
+        List<string> paths =(List<string>)FileTreeEvaluator.Evaluate(rules.Block);
         paths = paths.Distinct().ToList();
         paths.Sort();
         TreeBuilder builder = new TreeBuilder("destination",null);
-        foreach (var path in paths)
+        foreach (string path in paths)
         {
-            List<String> items = path.Split("/").ToList();
+            List<string> items = path.Split("/").ToList();
             items.RemoveAt(0);
             TreeBuilder.TreeStruct(builder, items);
         }
             
         StringBuilder output = new StringBuilder();
         builder.PrintTree(output, true);
-        return output.ToString();
+        Console.WriteLine(output.ToString());
+        return 0;
     }
 }

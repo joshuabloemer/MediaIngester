@@ -15,15 +15,20 @@ public class PreviewFileCommand : Command
         Argument<FileInfo> rulesPath = new(
             name: "rules",
             description: "The rules file to use while ingesting");
+        
         this.AddArgument(previewFilePath);
         this.AddArgument(rulesPath);
-        this.SetHandler((file,rules) =>
+        this.SetHandler((context) =>
         {
-            Console.WriteLine(PreviewFile(file, rules));
-        }, previewFilePath, rulesPath);
+            FileInfo file = context.ParseResult.GetValueForArgument(previewFilePath);
+            FileInfo rules = context.ParseResult.GetValueForArgument(rulesPath);
+            int exitCode = PreviewFile(file, rules);
+            context.ExitCode = exitCode;
+        })
+        ;
     }
 
-    private static string PreviewFile(FileInfo filePath, FileInfo rulesPath)
+    private static int PreviewFile(FileInfo filePath, FileInfo rulesPath)
     {
         Parser parser = new Parser();
         SyntaxNode rules;
@@ -33,11 +38,12 @@ public class PreviewFileCommand : Command
         }
         catch (FormatException e)
         {
-            Console .WriteLine($"Error parsing rule file \"{rulesPath.FullName}\": {e.Message}");
-            return null;
+            Console.WriteLine($"Error parsing rule file \"{rulesPath.FullName}\": {e.Message}");
+            return 1;
         }
 
         Evaluator evaluator = new Evaluator(filePath.FullName);
-        return (string)evaluator.Evaluate(rules);
+        Console.WriteLine((string)evaluator.Evaluate(rules));
+        return 0;
     }
 }
