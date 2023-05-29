@@ -24,8 +24,7 @@ public class PreviewFileCommand : Command
             FileInfo rules = context.ParseResult.GetValueForArgument(rulesPath);
             int exitCode = PreviewFile(file, rules);
             context.ExitCode = exitCode;
-        })
-        ;
+        });
     }
 
     private static int PreviewFile(FileInfo filePath, FileInfo rulesPath)
