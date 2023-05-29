@@ -40,9 +40,10 @@ namespace MediaIngesterCore.Ingesting
         /// </summary>
         /// <param name="cancellationToken">A cancellation token that can be used to cancel the ingest.</param>
         /// <param name="resetEvent">A ManualResetEvent that can be used to pause and resume the ingest</param>
+        /// <param name="progress">A progress object that can be used to report progress</param>
         /// <returns>A reference to the ingest task</returns>
         /// <exception cref="InvalidOperationException">If the ingest is already in progress</exception>
-        public Task Ingest(CancellationToken cancellationToken, ManualResetEvent resetEvent)
+        public Task Ingest(CancellationToken cancellationToken, ManualResetEvent resetEvent, IProgress<double>? progress = null)
         {
             if (this.Status != IngestStatus.Ready)
             {
@@ -70,6 +71,7 @@ namespace MediaIngesterCore.Ingesting
                         this.FileIngestStarted?.Invoke(this, new FileIngestStartedEventArgs(filePath, i));
                         FileIngestCompletedEventArgs args = IngestFile(filePath, i);
                         this.FileIngestCompleted?.Invoke(this,args);
+                        progress?.Report((i+1d) / this.Job.Files.Count);
                     }
                     this.Status = IngestStatus.Completed;
                 }
