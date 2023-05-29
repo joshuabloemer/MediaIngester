@@ -6,17 +6,17 @@ using static MediaIngesterCore.Utils;
 
 namespace MediaIngesterCore.Parsing
 {
-    internal class Evaluator
+    public class Evaluator
     {
         public string FilePath { get; }
 
-        public Dictionary<String, Dictionary<String, String>> Metadata { get; } = new Dictionary<String, Dictionary<String, String>>();
+        public Dictionary<String, Dictionary<String, String>> Metadata { get; } = new();
 
         public DateTime DateTaken { get; }
 
         public Boolean RuleMatched { get; private set; } = false;
 
-        internal Evaluator(string filePath)
+        public Evaluator(string filePath)
         {
             this.FilePath = filePath;
             this.DateTaken = GetDateTaken(filePath);

@@ -11,4 +11,9 @@
     <ProjectReference Include="..\MediaIngesterCore\MediaIngesterCore.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console" Version="0.47.1-preview.0.5" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+  </ItemGroup>
+
 </Project>

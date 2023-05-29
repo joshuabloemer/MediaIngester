@@ -14,7 +14,7 @@ public class RuleNode : SyntaxNode {
         this.Indent = indent;
     }
 
-    public SyntaxNode GetIndent(){
+    public SyntaxNode? GetIndent(){
         if (this.Indent is not EmptyNode){
             return (BlockNode)this.Indent;   
         }
