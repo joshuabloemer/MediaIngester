@@ -1,20 +1,21 @@
 ﻿using System.CommandLine;
-using System.Text;
 using MediaIngesterCore.Parsing;
 using MediaIngesterCore.Parsing.SyntaxTree;
+using Spectre.Console;
 
 namespace MediaIngesterCLI.Commands;
 
 public class PreviewDirectoryCommand : Command
 {
-    public PreviewDirectoryCommand() : base("directory", "Prints the ingest location of a directory without ingesting it")
+    public PreviewDirectoryCommand() : base("directory",
+        "Prints the ingest location of a directory without ingesting it")
     {
         Argument<FileInfo> rulesPath = new(
-            name: "rules",
-            description: "The rules file to use while ingesting");
-        
-        this.AddArgument(rulesPath);
-        this.SetHandler((context) =>
+            "rules",
+            "The rules file to use while ingesting");
+
+        AddArgument(rulesPath);
+        this.SetHandler(context =>
         {
             FileInfo rules = context.ParseResult.GetValueForArgument(rulesPath);
             int exitCode = PreviewDirectory(rules);
@@ -24,11 +25,11 @@ public class PreviewDirectoryCommand : Command
 
     private static int PreviewDirectory(FileInfo rulesPath)
     {
-        Parser parser = new Parser();
+        Parser parser = new();
         ProgramNode rules;
         try
         {
-            rules = parser.Parse( File.ReadAllText(rulesPath.FullName));
+            rules = parser.Parse(File.ReadAllText(rulesPath.FullName));
         }
         catch (FormatException e)
         {
@@ -36,20 +37,51 @@ public class PreviewDirectoryCommand : Command
             return 1;
         }
 
-        List<string> paths =(List<string>)FileTreeEvaluator.Evaluate(rules.Block);
+        List<string> paths = (List<string>)FileTreeEvaluator.Evaluate(rules.Block);
         paths = paths.Distinct().ToList();
         paths.Sort();
-        TreeBuilder builder = new TreeBuilder("destination",null);
+        // TreeBuilder builder = new("destination", null);
+        // foreach (string path in paths)
+        // {
+        //     List<string> items = path.Split("/").ToList();
+        //     items.RemoveAt(0);
+        //     TreeBuilder.TreeStruct(builder, items);
+        // }
+
+        // StringBuilder output = new();
+        // builder.PrintTree(output, true);
+        // Console.WriteLine(output.ToString());
+        Tree? root = new("Destination");
+        List<List<string>> splitPaths = new();
         foreach (string path in paths)
         {
-            List<string> items = path.Split("/").ToList();
-            items.RemoveAt(0);
-            TreeBuilder.TreeStruct(builder, items);
+            List<string> splitPath = path.Split("/").ToList();
+            splitPath.RemoveAt(0);
+            splitPaths.Add(splitPath);
         }
-            
-        StringBuilder output = new StringBuilder();
-        builder.PrintTree(output, true);
-        Console.WriteLine(output.ToString());
+
+        Utils.CreateTreeRecursive(splitPaths, root);
+
+        // // Add some nodes
+        // TreeNode? foo = root.AddNode("[yellow]Foo[/]");
+        // TreeNode? table = foo.AddNode(new Table()
+        //     .RoundedBorder()
+        //     .AddColumn("First")
+        //     .AddColumn("Second")
+        //     .AddRow("1", "2")
+        //     .AddRow("3", "4")
+        //     .AddRow("5", "6"));
+        //
+        // table.AddNode("[blue]Baz[/]");
+        // foo.AddNode("Qux");
+        //
+        // TreeNode? bar = root.AddNode("[yellow]Bar[/]");
+        // bar.AddNode(new Calendar(2020, 12)
+        //     .AddCalendarEvent(2020, 12, 12)
+        //     .HideHeader());
+
+        // Render the tree
+        AnsiConsole.Write(root);
         return 0;
     }
 }
