@@ -9,16 +9,16 @@ public class PreviewFileCommand : Command
     public PreviewFileCommand() : base("file", "Prints the ingest location of a file without ingesting it")
     {
         Argument<FileInfo> previewFilePath = new(
-            name: "file",
-            description: "The file to preview");
-        
+            "file",
+            "The file to preview");
+
         Argument<FileInfo> rulesPath = new(
-            name: "rules",
-            description: "The rules file to use while ingesting");
-        
+            "rules",
+            "The rules file to use while ingesting");
+
         this.AddArgument(previewFilePath);
         this.AddArgument(rulesPath);
-        this.SetHandler((context) =>
+        this.SetHandler(context =>
         {
             FileInfo file = context.ParseResult.GetValueForArgument(previewFilePath);
             FileInfo rules = context.ParseResult.GetValueForArgument(rulesPath);
@@ -29,19 +29,19 @@ public class PreviewFileCommand : Command
 
     private static int PreviewFile(FileInfo filePath, FileInfo rulesPath)
     {
-        Parser parser = new Parser();
+        Parser parser = new();
         SyntaxNode rules;
         try
         {
-            rules = parser.Parse( File.ReadAllText(rulesPath.FullName));
+            rules = parser.Parse(File.ReadAllText(rulesPath.FullName));
         }
         catch (FormatException e)
         {
-            Console.WriteLine($"Error parsing rule file \"{rulesPath.FullName}\": {e.Message}");
+            Console.Error.WriteLine($"Error parsing rule file \"{rulesPath.FullName}\": {e.Message}");
             return 1;
         }
 
-        Evaluator evaluator = new Evaluator(filePath.FullName);
+        Evaluator evaluator = new(filePath.FullName);
         Console.WriteLine((string)evaluator.Evaluate(rules));
         return 0;
     }

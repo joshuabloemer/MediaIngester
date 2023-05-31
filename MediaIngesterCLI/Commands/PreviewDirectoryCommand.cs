@@ -33,24 +33,13 @@ public class PreviewDirectoryCommand : Command
         }
         catch (FormatException e)
         {
-            Console.WriteLine($"Error parsing rule file \"{rulesPath.FullName}\": {e.Message}");
+            Console.Error.WriteLine($"Error parsing rule file \"{rulesPath.FullName}\": {e.Message}");
             return 1;
         }
 
         List<string> paths = (List<string>)FileTreeEvaluator.Evaluate(rules.Block);
-        paths = paths.Distinct().ToList();
-        paths.Sort();
-        // TreeBuilder builder = new("destination", null);
-        // foreach (string path in paths)
-        // {
-        //     List<string> items = path.Split("/").ToList();
-        //     items.RemoveAt(0);
-        //     TreeBuilder.TreeStruct(builder, items);
-        // }
 
-        // StringBuilder output = new();
-        // builder.PrintTree(output, true);
-        // Console.WriteLine(output.ToString());
+        paths.Sort();
         Tree? root = new("Destination");
         List<List<string>> splitPaths = new();
         foreach (string path in paths)
@@ -61,26 +50,6 @@ public class PreviewDirectoryCommand : Command
         }
 
         Utils.CreateTreeRecursive(splitPaths, root);
-
-        // // Add some nodes
-        // TreeNode? foo = root.AddNode("[yellow]Foo[/]");
-        // TreeNode? table = foo.AddNode(new Table()
-        //     .RoundedBorder()
-        //     .AddColumn("First")
-        //     .AddColumn("Second")
-        //     .AddRow("1", "2")
-        //     .AddRow("3", "4")
-        //     .AddRow("5", "6"));
-        //
-        // table.AddNode("[blue]Baz[/]");
-        // foo.AddNode("Qux");
-        //
-        // TreeNode? bar = root.AddNode("[yellow]Bar[/]");
-        // bar.AddNode(new Calendar(2020, 12)
-        //     .AddCalendarEvent(2020, 12, 12)
-        //     .HideHeader());
-
-        // Render the tree
         AnsiConsole.Write(root);
         return 0;
     }
