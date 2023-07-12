@@ -1,20 +1,17 @@
 ﻿using System.CommandLine;
 using MediaIngesterCLI.Commands;
 
+namespace MediaIngesterCLI;
 
-namespace MediaIngesterCLI
+public static class Program
 {
-    
-    public static class Program
+    public static int Main(string[] args)
     {
-        public static int Main(string[] args)
-        {
+        RootCommand rootCommand = new("A simple command line ingest tool");
 
-            RootCommand rootCommand = new("A simple command line ingest tool");
-
-            rootCommand.AddCommand(new IngestCommand());
-            rootCommand.AddCommand(new PreviewCommand());
-            return rootCommand.InvokeAsync(args).Result;
-        }
+        rootCommand.AddCommand(new IngestCommand());
+        rootCommand.AddCommand(new PreviewCommand());
+        rootCommand.AddCommand(new DebugCommand());
+        return rootCommand.InvokeAsync(args).Result;
     }
 }
