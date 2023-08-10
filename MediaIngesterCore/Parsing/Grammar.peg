@@ -2,59 +2,72 @@
 @classname Parser
 @using MediaIngesterCore.Parsing.SyntaxTree
 @using MediaIngesterCore.Parsing.SyntaxTree.Conditions
-@using MediaIngesterCore.Parsing.SyntaxTree.Conditions.Types
+@trace true
+@start program
+
 
 program<ProgramNode>
- = #{ state["Indentation"] = 0; } b:block {new ProgramNode(b)} 
+ = #{ state["Indentation"] = 0; } v:variableBlock (EOL _*)+ b:block{new ProgramNode(v,b)} 
+
+variableBlock<VarBlockNode>
+  = head:assign (EOL _*)+ tail:variableBlock { new VarBlockNode(head).Concat(tail)}
+  / line:assign _* { new VarBlockNode(line) }
 
 block<BlockNode>
-  = INDENTATION head:rule EOL _? EOL tail:block { new BlockNode(head).Concat(tail)}
-  / INDENTATION line:rule { new BlockNode(line) }
+  = INDENTATION head:rule _* (EOL _*)+ tail:block { new BlockNode(head).Concat(tail)}
+  / INDENTATION line:rule _*{ new BlockNode(line) }
+
+
+expression<SyntaxNode> 
+  = "path[" p:("" [0-9\-]+) "]" {new PathPartNode(int.Parse(p))}
+  / d:(""[^":]+) ":"  t:(""[^:"}]+)":" {new MetadataNode(d,t)}
+  / lookup
+  / value
+  
+
+assign<AssignNode> = name:varName " = " e:expression {new AssignNode(name,e)}      
+lookup<LookupNode> = name:varName {new LookupNode(name)}
+varName = ("" [A-Za-z0-9_]+)
+
+value<ValueNode> 
+  = '"' v:((stringPart))+ '"'  {new ValueNode(new List<SyntaxNode>(v))}
+  / 'r"' v:(""[^\r\n"]+) '"'  {new ValueNode(new List<SyntaxNode>(1){new LiteralNode(v)})}
+
+
+stringPart<SyntaxNode>  
+  = stringInterpolation 
+  / literal
+
+stringInterpolation<LookupNode> = "{" v:lookup "}" {v}
+literal<LiteralNode> = v:escapedString {new LiteralNode(v)}
+
+escapedString<string>
+  = v:("\\"? !stringInterpolation c:("" [^\r\n"]) {c})+ {v.Aggregate((a,b) => a+b)}
 
 rule<RuleNode> 
-  = (c:condition _ '-->' _ '"' p:path '"' EOL INDENTATION r:rule) {new RuleNode(c,p,r,new EmptyNode())}
-  / (c:condition _ '-->' _ '"' p:path '"' EOL INDENT b:block UNDENT) {new RuleNode(c,p,new EmptyNode(),b)} 
-  / (c:condition _ '-->' _ '"' p:path '"') {new RuleNode(c,p,new EmptyNode(),new EmptyNode())}
+  = (c:compositeCondition _ '-->' _ p:path _*  EOL INDENTATION r:rule) {new RuleNode(c,p,r,new EmptyNode())}
+  / (c:compositeCondition _ '-->' _ p:path _* EOL INDENT b:block UNDENT) {new RuleNode(c,p,new EmptyNode(),b)} 
+  / (c:compositeCondition _ '-->' _ p:path ) {new RuleNode(c,p,new EmptyNode(),new EmptyNode())}
 
-  / (c:condition EOL INDENTATION r:rule) {new RuleNode(c,new PathNode(new StringNode("")),r,new EmptyNode())}
-  / (c:condition EOL INDENT b:block UNDENT) {new RuleNode(c,new PathNode(new StringNode("")),new EmptyNode(),b)}
-  / (c:condition) {new RuleNode(c,new PathNode(new StringNode("")),new EmptyNode(),new EmptyNode())}
 
-condition<SyntaxNode> 
-  = (l:conditionType _? '=' _? r:conditionType) {new EqualsNode(l,r)}
-  / (l:conditionType _? '!='_? r:conditionType) {new NotNode(l,r)}
-  / (l:conditionType _? '>' _? r:conditionType) {new GreaterThanNode(l,r)}
-  / (l:conditionType _? '<' _? r:conditionType) {new LessThanNode(l,r)}
-  / (l:conditionType _? '<='_? r:conditionType) {new GreaterOrEqualNode(l,r)}
-  / (l:conditionType _? '>='_? r:conditionType) {new LessOrEqualNode(l,r)}
-  / 'any' {new AnyNode()}
-  / (l:conditionType _ 'contains' _ r:conditionType) {new ContainsNode(l,r)}
+path<SyntaxNode>
+  = expression
+  / ignore
+  / empty
 
-stringInterpolation<SyntaxNode> = "{" c:conditionType "}" {c} 
+ignore<IgnoreNode> = "!" {new IgnoreNode()}
+empty<ValueNode> = "?" {new ValueNode(new List<SyntaxNode>(1){new LiteralNode("")})}
 
-path<PathNode>
-  = head:pathComponent tail:path {new PathNode(head).Concat(tail)}
-  / part:pathComponent {new PathNode(part)}
+compositeCondition<SyntaxNode>
+  = "not" _? "("? c:condition")"? {new NotNode(c)}
+  / condition
 
-pathComponent<SyntaxNode> 
-  = pathString
-  / stringInterpolation
-
-pathString<StringNode> = s:("" [^\\:*?"<>|}{]+) {new StringNode(s)}
-
-conditionType<SyntaxNode>
-    = "extension" {new ExtensionNode()}
-    / "year"  {new YearNode()}
-    / "month"  {new MonthNode()}
-    / "day"  {new DayNode()}
-    / "hour"  {new HourNode()}
-    / "minute"  {new MinuteNode()}
-    / "second"  {new SecondNode()}
-    / "file name" {new FileNameNode()}
-    / "path[" p:("" [0-9\-]+) "]" {new PathPartNode(int.Parse(p))}
-    / "path" {new PathNameNode()}
-    / d:(""[^";]+) ";"  t:(""[^;"}]+) ";" {new MetadataNode(d,t)}
-    / '"' s:("" [^\\/:*?"<>|.]+) '"' {new StringNode(s)} 
+condition<ConditionNode> 
+  = ('any') {new AnyNode()}
+  / (l:expression _? ('=='/"equals") _? r:expression) {new EqualsNode(l,r)}
+  / (l:expression _? ('!='/"not equals")_? r:expression) {new NotEqualsNode(l,r)}
+  / (l:expression _? "matches" _? r:expression) {new MatchesNode(l,r)}
+  / (l:expression _? "matches" _? r:expression) {new ContainsNode(l,r)}
 
 _ = [\t ]+
 EOL = '\n' / '\r\n'

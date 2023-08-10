@@ -1,6 +1,8 @@
 namespace MediaIngesterCore.Parsing.SyntaxTree.Conditions;
 
-public class AnyNode : SyntaxNode{
-
-    public AnyNode(){}
+public class AnyNode : ConditionNode
+{
+    public AnyNode() : base(new EmptyNode(), new EmptyNode())
+    {
+    }
 }

@@ -1,7 +1,4 @@
 ﻿using System.CommandLine;
-using MediaIngesterCore.Parsing;
-using MediaIngesterCore.Parsing.SyntaxTree;
-using Spectre.Console;
 
 namespace MediaIngesterCLI.Commands;
 
@@ -14,7 +11,7 @@ public class PreviewDirectoryCommand : Command
             "rules",
             "The rules file to use while ingesting");
 
-        AddArgument(rulesPath);
+        this.AddArgument(rulesPath);
         this.SetHandler(context =>
         {
             FileInfo rules = context.ParseResult.GetValueForArgument(rulesPath);
@@ -25,32 +22,32 @@ public class PreviewDirectoryCommand : Command
 
     private static int PreviewDirectory(FileInfo rulesPath)
     {
-        Parser parser = new();
-        ProgramNode rules;
-        try
-        {
-            rules = parser.Parse(File.ReadAllText(rulesPath.FullName));
-        }
-        catch (FormatException e)
-        {
-            Console.Error.WriteLine($"Error parsing rule file \"{rulesPath.FullName}\": {e.Message}");
-            return 1;
-        }
-
-        List<string> paths = (List<string>)FileTreeEvaluator.Evaluate(rules.Block);
-
-        paths.Sort();
-        Tree? root = new("Destination");
-        List<List<string>> splitPaths = new();
-        foreach (string path in paths)
-        {
-            List<string> splitPath = path.Split("/").ToList();
-            splitPath.RemoveAt(0);
-            splitPaths.Add(splitPath);
-        }
-
-        Utils.CreateTreeRecursive(splitPaths, root);
-        AnsiConsole.Write(root);
+        // Parser parser = new();
+        // ProgramNode rules;
+        // try
+        // {
+        //     rules = parser.Parse(File.ReadAllText(rulesPath.FullName));
+        // }
+        // catch (FormatException e)
+        // {
+        //     Console.Error.WriteLine($"Error parsing rule file \"{rulesPath.FullName}\": {e.Message}");
+        //     return 1;
+        // }
+        //
+        // List<string> paths = (List<string>)FileTreeEvaluator.Evaluate(rules.Block);
+        //
+        // paths.Sort();
+        // Tree? root = new("Destination");
+        // List<List<string>> splitPaths = new();
+        // foreach (string path in paths)
+        // {
+        //     List<string> splitPath = path.Split("/").ToList();
+        //     splitPath.RemoveAt(0);
+        //     splitPaths.Add(splitPath);
+        // }
+        //
+        // Utils.CreateTreeRecursive(splitPaths, root);
+        // AnsiConsole.Write(root);
         return 0;
     }
 }

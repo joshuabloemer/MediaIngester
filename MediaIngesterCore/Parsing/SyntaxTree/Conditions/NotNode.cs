@@ -1,6 +1,11 @@
-namespace MediaIngesterCore.Parsing.SyntaxTree.Conditions;
+﻿namespace MediaIngesterCore.Parsing.SyntaxTree.Conditions;
 
-public class NotNode : ConditionNode{
-    
-    public NotNode(SyntaxNode l, SyntaxNode r):base(l,r){}
+public class NotNode : SyntaxNode
+{
+    public NotNode(ConditionNode condition)
+    {
+        this.Condition = condition;
+    }
+
+    public ConditionNode Condition { get; }
 }
