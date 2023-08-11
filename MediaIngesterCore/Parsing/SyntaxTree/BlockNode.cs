@@ -1,13 +1,17 @@
 namespace MediaIngesterCore.Parsing.SyntaxTree;
 
-public class BlockNode : SyntaxNode {
-    public List<SyntaxNode> Statements { get; }
-    public BlockNode(SyntaxNode node) {
-        this.Statements = new List<SyntaxNode> { node };
+public class BlockNode : SyntaxNode
+{
+    public BlockNode(RuleNode node)
+    {
+        this.Statements = new List<RuleNode> { node };
     }
 
-    public BlockNode Concat(BlockNode tail) {
+    public List<RuleNode> Statements { get; }
+
+    public BlockNode Concat(BlockNode tail)
+    {
         this.Statements.AddRange(tail.Statements);
-        return(this);
+        return this;
     }
 }

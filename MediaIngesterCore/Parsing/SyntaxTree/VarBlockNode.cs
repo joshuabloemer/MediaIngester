@@ -2,12 +2,12 @@
 
 public class VarBlockNode : SyntaxNode
 {
-    public VarBlockNode(SyntaxNode node)
+    public VarBlockNode(AssignNode node)
     {
-        this.Statements = new List<SyntaxNode> { node };
+        this.Statements = new List<AssignNode> { node };
     }
 
-    public List<SyntaxNode> Statements { get; }
+    public List<AssignNode> Statements { get; }
 
     public VarBlockNode Concat(VarBlockNode tail)
     {

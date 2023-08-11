@@ -1,12 +1,10 @@
+using MediaIngesterCore.Parsing.SyntaxTree.Conditions;
+
 namespace MediaIngesterCore.Parsing.SyntaxTree;
 
-public class RuleNode : SyntaxNode {
-    public SyntaxNode Condition {get;} 
-    public SyntaxNode Path {get;}
-    public SyntaxNode Under {get;}
-    public SyntaxNode Indent {get;}
-
-    public RuleNode(SyntaxNode condition,SyntaxNode path,SyntaxNode under, SyntaxNode indent)
+public class RuleNode : SyntaxNode
+{
+    public RuleNode(ConditionNode condition, SyntaxNode path, RuleNode? under, BlockNode? indent)
     {
         this.Condition = condition;
         this.Path = path;
@@ -14,14 +12,13 @@ public class RuleNode : SyntaxNode {
         this.Indent = indent;
     }
 
-    public SyntaxNode? GetIndent(){
-        if (this.Indent is not EmptyNode){
-            return (BlockNode)this.Indent;   
-        }
-        if (this.Under is not EmptyNode){ 
-            RuleNode under = (RuleNode)this.Under;
-            return under.GetIndent();
-        }
-        return null;
+    public ConditionNode Condition { get; }
+    public SyntaxNode Path { get; }
+    public RuleNode? Under { get; }
+    public BlockNode? Indent { get; }
+
+    public BlockNode? GetIndent()
+    {
+        return this.Indent ?? this.Under?.GetIndent();
     }
 }

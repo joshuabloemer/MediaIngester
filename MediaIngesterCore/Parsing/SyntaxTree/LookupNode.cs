@@ -1,6 +1,6 @@
 ﻿namespace MediaIngesterCore.Parsing.SyntaxTree;
 
-public class LookupNode : SyntaxNode
+public class LookupNode : ExpressionNode
 {
     public LookupNode(string name)
     {

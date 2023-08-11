@@ -2,7 +2,7 @@
 
 public class MatchesNode : ConditionNode
 {
-    public MatchesNode(SyntaxNode l, SyntaxNode r) : base(l, r)
+    public MatchesNode(ExpressionNode l, ExpressionNode r) : base(l, r)
     {
     }
 }

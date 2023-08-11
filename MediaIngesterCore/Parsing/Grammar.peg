@@ -18,7 +18,7 @@ block<BlockNode>
   / INDENTATION line:rule _*{ new BlockNode(line) }
 
 
-expression<SyntaxNode> 
+expression<ExpressionNode> 
   = "path[" p:("" [0-9\-]+) "]" {new PathPartNode(int.Parse(p))}
   / d:(""[^":]+) ":"  t:(""[^:"}]+)":" {new MetadataNode(d,t)}
   / lookup
@@ -45,9 +45,9 @@ escapedString<string>
   = v:("\\"? !stringInterpolation c:("" [^\r\n"]) {c})+ {v.Aggregate((a,b) => a+b)}
 
 rule<RuleNode> 
-  = (c:compositeCondition _ '-->' _ p:path _*  EOL INDENTATION r:rule) {new RuleNode(c,p,r,new EmptyNode())}
-  / (c:compositeCondition _ '-->' _ p:path _* EOL INDENT b:block UNDENT) {new RuleNode(c,p,new EmptyNode(),b)} 
-  / (c:compositeCondition _ '-->' _ p:path ) {new RuleNode(c,p,new EmptyNode(),new EmptyNode())}
+  = (c:compositeCondition _ '-->' _ p:path _*  EOL INDENTATION r:rule) {new RuleNode(c,p,r,null)}
+  / (c:compositeCondition _ '-->' _ p:path _* EOL INDENT b:block UNDENT) {new RuleNode(c,p,null,b)} 
+  / (c:compositeCondition _ '-->' _ p:path ) {new RuleNode(c,p,null,null)}
 
 
 path<SyntaxNode>
@@ -58,7 +58,7 @@ path<SyntaxNode>
 ignore<IgnoreNode> = "!" {new IgnoreNode()}
 empty<ValueNode> = "?" {new ValueNode(new List<SyntaxNode>(1){new LiteralNode("")})}
 
-compositeCondition<SyntaxNode>
+compositeCondition<ConditionNode>
   = "not" _? "("? c:condition")"? {new NotNode(c)}
   / condition
 

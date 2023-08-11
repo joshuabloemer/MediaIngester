@@ -30,7 +30,7 @@ public class PreviewFileCommand : Command
     private static int PreviewFile(FileInfo filePath, FileInfo rulesPath)
     {
         Parser parser = new();
-        SyntaxNode rules;
+        ProgramNode rules;
         try
         {
             rules = parser.Parse(File.ReadAllText(rulesPath.FullName));

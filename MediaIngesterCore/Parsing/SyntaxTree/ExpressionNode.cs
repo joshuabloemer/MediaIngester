@@ -1,5 +1,5 @@
 ﻿namespace MediaIngesterCore.Parsing.SyntaxTree;
 
-public abstract class StringPartNode : SyntaxNode
+public class ExpressionNode : SyntaxNode
 {
 }
