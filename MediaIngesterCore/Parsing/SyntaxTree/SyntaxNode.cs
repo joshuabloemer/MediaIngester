@@ -26,7 +26,7 @@ public abstract class SyntaxNode
             .Where(p => typeof(IList).IsAssignableFrom(p.PropertyType));
         foreach (PropertyInfo prop in listProperties)
         {
-            IList? list = (IList)prop.GetValue(this);
+            IList? list = (IList)prop?.GetValue(this);
             foreach (object? item in list)
                 if (item is SyntaxNode)
                     ((SyntaxNode)item).Render(sb, padding + "  ");
@@ -34,6 +34,6 @@ public abstract class SyntaxNode
 
         IEnumerable<PropertyInfo> nodeProperties = this.GetType().GetProperties()
             .Where(p => typeof(SyntaxNode).IsAssignableFrom(p.PropertyType));
-        foreach (PropertyInfo prop in nodeProperties) ((SyntaxNode)prop.GetValue(this)).Render(sb, padding + "  ");
+        foreach (PropertyInfo prop in nodeProperties) ((SyntaxNode)prop.GetValue(this))?.Render(sb, padding + "  ");
     }
 }
