@@ -42,7 +42,14 @@ public class PreviewFileCommand : Command
         }
 
         Evaluator evaluator = new(filePath.FullName);
-        Console.WriteLine((string)evaluator.Evaluate(rules));
+        string? result = evaluator.Evaluate(rules);
+        if (evaluator.Ignore)
+        {
+            Console.WriteLine("Ignored");
+            return 0;
+        }
+
+        Console.WriteLine(result);
         return 0;
     }
 }

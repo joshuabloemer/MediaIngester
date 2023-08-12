@@ -1,118 +1,122 @@
 ﻿using MediaIngesterCore.Parsing;
 using static MediaIngesterCore.Utils;
 
-namespace MediaIngesterCore.Ingesting
+namespace MediaIngesterCore.Ingesting;
+
+/// <summary>
+///     Represents a media ingest
+/// </summary>
+public class Ingester
 {
     /// <summary>
-    /// Represents a media ingest
+    ///     The job this ingester is working on
     /// </summary>
-    public class Ingester
+    public readonly IngestJob Job;
+
+    public Ingester(IngestJob job)
     {
-        /// <summary>
-        /// The job this ingester is working on
-        /// </summary>
-        public readonly IngestJob Job;
-        /// <summary>
-        /// The status of the ingest
-        /// </summary>
-        public IngestStatus Status { get; private set; } = IngestStatus.Ready;
-        /// <summary>
-        /// Raised when a file copy is started
-        /// </summary>
-        public event EventHandler<FileIngestStartedEventArgs>? FileIngestStarted;
-        /// <summary>
-        /// Raised when a file copy is completed
-        /// </summary>
-        public event EventHandler<FileIngestCompletedEventArgs>? FileIngestCompleted;
-        
-        public Ingester(IngestJob job)
-        {
-            this.Job = job;
-        }
+        this.Job = job;
+    }
 
-        public Task Ingest()
+    /// <summary>
+    ///     The status of the ingest
+    /// </summary>
+    public IngestStatus Status { get; private set; } = IngestStatus.Ready;
+
+    /// <summary>
+    ///     Raised when a file copy is started
+    /// </summary>
+    public event EventHandler<FileIngestStartedEventArgs>? FileIngestStarted;
+
+    /// <summary>
+    ///     Raised when a file copy is completed
+    /// </summary>
+    public event EventHandler<FileIngestCompletedEventArgs>? FileIngestCompleted;
+
+    public Task Ingest()
+    {
+        return this.Ingest(new CancellationToken(), new ManualResetEvent(true));
+    }
+
+    /// <summary>
+    ///     Starts the ingest
+    /// </summary>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the ingest.</param>
+    /// <param name="resetEvent">A ManualResetEvent that can be used to pause and resume the ingest</param>
+    /// <param name="progress">A progress object that can be used to report progress</param>
+    /// <returns>A reference to the ingest task</returns>
+    /// <exception cref="InvalidOperationException">If the ingest is already in progress</exception>
+    public Task Ingest(CancellationToken cancellationToken, ManualResetEvent resetEvent,
+        IProgress<double>? progress = null)
+    {
+        if (this.Status != IngestStatus.Ready)
+            throw new InvalidOperationException("Cannot start ingest while ingest is in progress");
+        return Task.Run(() =>
         {
-            return this.Ingest(new CancellationToken(), new ManualResetEvent(true));
-        }
-        
-        /// <summary>
-        /// Starts the ingest
-        /// </summary>
-        /// <param name="cancellationToken">A cancellation token that can be used to cancel the ingest.</param>
-        /// <param name="resetEvent">A ManualResetEvent that can be used to pause and resume the ingest</param>
-        /// <param name="progress">A progress object that can be used to report progress</param>
-        /// <returns>A reference to the ingest task</returns>
-        /// <exception cref="InvalidOperationException">If the ingest is already in progress</exception>
-        public Task Ingest(CancellationToken cancellationToken, ManualResetEvent resetEvent, IProgress<double>? progress = null)
-        {
-            if (this.Status != IngestStatus.Ready)
+            try
             {
-                throw new InvalidOperationException("Cannot start ingest while ingest is in progress");
-            }
-            return Task.Run(() =>
-            {
-                try
+                this.Status = IngestStatus.Ingesting;
+                for (int i = 0; i < this.Job.Files.Count; i++)
                 {
+                    if (!resetEvent.WaitOne(0)) this.Status = IngestStatus.Paused;
+                    resetEvent.WaitOne();
                     this.Status = IngestStatus.Ingesting;
-                    for (int i = 0; i < this.Job.Files.Count; i++)
+                    if (cancellationToken.IsCancellationRequested)
                     {
-                        if (!resetEvent.WaitOne(0))
-                        {
-                            this.Status = IngestStatus.Paused;
-                        }
-                        resetEvent.WaitOne();
-                        this.Status = IngestStatus.Ingesting;
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            this.Status = IngestStatus.Canceled;
-                            cancellationToken.ThrowIfCancellationRequested();
-                        }
-                        string filePath = this.Job.Files.ElementAt(i);
-                        this.FileIngestStarted?.Invoke(this, new FileIngestStartedEventArgs(filePath, i));
-                        FileIngestCompletedEventArgs args = IngestFile(filePath, i);
-                        this.FileIngestCompleted?.Invoke(this,args);
-                        progress?.Report((i+1d) / this.Job.Files.Count);
+                        this.Status = IngestStatus.Canceled;
+                        cancellationToken.ThrowIfCancellationRequested();
                     }
-                    this.Status = IngestStatus.Completed;
+
+                    string filePath = this.Job.Files.ElementAt(i);
+                    this.FileIngestStarted?.Invoke(this, new FileIngestStartedEventArgs(filePath, i));
+                    FileIngestCompletedEventArgs args = this.IngestFile(filePath, i);
+                    this.FileIngestCompleted?.Invoke(this, args);
+                    progress?.Report((i + 1d) / this.Job.Files.Count);
                 }
-                catch
-                {
-                    this.Status = IngestStatus.Failed;
-                    throw;
-                }
-            }, cancellationToken);
+
+                this.Status = IngestStatus.Completed;
+            }
+            catch
+            {
+                this.Status = IngestStatus.Failed;
+                throw;
+            }
+        }, cancellationToken);
+    }
+
+    private FileIngestCompletedEventArgs IngestFile(string filePath, int i)
+    {
+        Evaluator evaluator = new(filePath);
+        string? destination = evaluator.Evaluate(this.Job.Rules);
+
+        if (evaluator.Ignore)
+            return new FileIngestCompletedEventArgs(i, filePath, "", false, false, false, true);
+
+        if (evaluator.Unsorted)
+            destination = Path.Join(this.Job.DestinationPath, "Unsorted");
+        else
+            destination = Path.Join(this.Job.DestinationPath, destination);
+        Directory.CreateDirectory(destination);
+        string fileName = Path.GetFileName(filePath);
+        int duplicates = 0;
+        bool skipped = false;
+        bool renamed = false;
+        while (File.Exists(Path.Join(destination, fileName)))
+        {
+            if (IsSameFile(filePath, Path.Join(destination, fileName)))
+            {
+                skipped = true;
+                return new FileIngestCompletedEventArgs(i, filePath, Path.Join(destination, fileName), skipped, renamed,
+                    !evaluator.Unsorted, false);
+            }
+
+            renamed = true;
+            duplicates++;
+            fileName = $"{Path.GetFileNameWithoutExtension(filePath)} ({duplicates}){Path.GetExtension(filePath)}";
         }
 
-        private FileIngestCompletedEventArgs IngestFile(string filePath, int i)
-        {
-            Evaluator evaluator = new Evaluator(filePath);
-            string destination = (string)evaluator.Evaluate(this.Job.Rules);
-            if (evaluator.RuleMatched)
-            {
-                destination = Path.Join(this.Job.DestinationPath, destination);
-            }
-            else
-            {
-                destination = Path.Join(this.Job.DestinationPath, "Unsorted");
-            }
-            Directory.CreateDirectory(destination);
-            string fileName = Path.GetFileName(filePath);
-            int duplicates = 0;
-            bool skipped = false;
-            bool renamed = false;
-            while (File.Exists(Path.Join(destination, fileName)))
-            {
-                if (IsSameFile(filePath, Path.Join(destination, fileName)))
-                {
-                    skipped = true;
-                    return new FileIngestCompletedEventArgs(i,filePath, Path.Join(destination, fileName), skipped, renamed, evaluator.RuleMatched);
-                }
-                renamed = true;
-                duplicates++;
-                fileName = $"{Path.GetFileNameWithoutExtension(filePath)} ({duplicates}){Path.GetExtension(filePath)}";
-            }
-            File.Copy(filePath, Path.Join(destination, fileName));
-            return new FileIngestCompletedEventArgs(i,filePath, Path.Join(destination, fileName), skipped, renamed, evaluator.RuleMatched);
-        }
+        File.Copy(filePath, Path.Join(destination, fileName));
+        return new FileIngestCompletedEventArgs(i, filePath, Path.Join(destination, fileName), skipped, renamed,
+            !evaluator.Unsorted, false);
     }
 }
