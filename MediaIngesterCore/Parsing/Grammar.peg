@@ -8,7 +8,7 @@
 
 program<ProgramNode>
  = #{ state["Indentation"] = 0; } v:variableBlock (EOL _*)+ b:block{new ProgramNode(v,b)} 
-
+ / #{ state["Indentation"] = 0; } b:block{new ProgramNode(null,b)}
 variableBlock<VarBlockNode>
   = head:assign (EOL _*)+ tail:variableBlock { new VarBlockNode(head).Concat(tail)}
   / line:assign _* { new VarBlockNode(line) }

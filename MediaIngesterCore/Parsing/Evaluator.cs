@@ -42,21 +42,22 @@ public class Evaluator
     }
 
     public bool Ignore { get; private set; }
-    public bool RuleMatched { get; }
+
     public bool Unsorted { get; private set; }
 
     public string? Evaluate(ProgramNode program)
     {
-        this.Evaluate(program.VarBlock);
+        if (program.VarBlock is not null)
+            this.Evaluate(program.VarBlock);
         return this.Evaluate(program.Block);
     }
 
-    public void Evaluate(VarBlockNode varBlock)
+    private void Evaluate(VarBlockNode varBlock)
     {
         foreach (AssignNode assign in varBlock.Statements) this.Evaluate(assign);
     }
 
-    public void Evaluate(AssignNode assign)
+    private void Evaluate(AssignNode assign)
     {
         this.variables[assign.Name] = this.Evaluate(assign.Value);
     }
@@ -96,7 +97,7 @@ public class Evaluator
         throw new VariableNotDefinedException("Variable not defined: " + lookup.Name);
     }
 
-    public string Evaluate(ValueNode value)
+    private string Evaluate(ValueNode value)
     {
         return value.Value.Aggregate("", (current, v) => current + v switch
         {
@@ -111,7 +112,7 @@ public class Evaluator
         return literal.Value;
     }
 
-    private string? Evaluate(BlockNode block)
+    public string? Evaluate(BlockNode block)
     {
         foreach (RuleNode statement in block.Statements)
         {
