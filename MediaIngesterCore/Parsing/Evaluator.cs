@@ -43,7 +43,7 @@ public class Evaluator
 
     public bool Ignore { get; private set; }
 
-    public bool Unsorted { get; private set; }
+    public bool RuleMatched { get; private set; } 
 
     public string? Evaluate(ProgramNode program)
     {
@@ -142,7 +142,7 @@ public class Evaluator
                     throw new NotImplementedException(rule.Path.ToString());
             }
 
-            this.Unsorted = false;
+            this.RuleMatched = true;
             BlockNode? indent = rule.GetIndent();
             if (indent is not null) result = Path.Join(result, this.Evaluate(indent));
         }

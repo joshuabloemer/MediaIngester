@@ -110,12 +110,16 @@ internal class IngestCommand : Command
     private void OnFileIngestCompleted(object? sender, FileIngestCompletedEventArgs e)
     {
         string message = $"File {e.FileNumber + 1} ({e.FilePath}) ";
-        if (e.Skipped)
-            message += "was skipped";
-        else if (e.Renamed)
-            message += $"was copied and renamed to {e.NewPath}";
-        else
-            message += $"was copied to {e.NewPath}";
+        message += e.Status switch
+        {
+            FileIngestStatus.IGNORED => "was ignored",
+            FileIngestStatus.RENAMED => $"was renamed to {e.NewPath}",
+            FileIngestStatus.SKIPPED => "was skipped",
+            FileIngestStatus.COMPLETED => $"was copied to {e.NewPath}",
+            FileIngestStatus.UNSORTED => "was copied to the unsorted folder",
+            _ => throw new ArgumentOutOfRangeException()
+        };
+
         AnsiConsole.WriteLine(message);
         this.progressContext?.Refresh();
     }

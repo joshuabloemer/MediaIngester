@@ -90,25 +90,22 @@ public class Ingester
         string? destination = evaluator.Evaluate(this.Job.Rules);
 
         if (evaluator.Ignore)
-            return new FileIngestCompletedEventArgs(i, filePath, "", false, false, false, true);
+            return new FileIngestCompletedEventArgs(i, filePath, "", FileIngestStatus.IGNORED);
 
-        if (evaluator.Unsorted)
-            destination = Path.Join(this.Job.DestinationPath, "Unsorted");
-        else
+        if (evaluator.RuleMatched)
             destination = Path.Join(this.Job.DestinationPath, destination);
+        else
+            destination = Path.Join(this.Job.DestinationPath, "Unsorted");
         Directory.CreateDirectory(destination);
         string fileName = Path.GetFileName(filePath);
         int duplicates = 0;
-        bool skipped = false;
+
         bool renamed = false;
         while (File.Exists(Path.Join(destination, fileName)))
         {
             if (IsSameFile(filePath, Path.Join(destination, fileName)))
-            {
-                skipped = true;
-                return new FileIngestCompletedEventArgs(i, filePath, Path.Join(destination, fileName), skipped, renamed,
-                    !evaluator.Unsorted, false);
-            }
+                return new FileIngestCompletedEventArgs(i, filePath, Path.Join(destination, fileName),
+                    FileIngestStatus.SKIPPED);
 
             renamed = true;
             duplicates++;
@@ -116,7 +113,8 @@ public class Ingester
         }
 
         File.Copy(filePath, Path.Join(destination, fileName));
-        return new FileIngestCompletedEventArgs(i, filePath, Path.Join(destination, fileName), skipped, renamed,
-            !evaluator.Unsorted, false);
+
+        return new FileIngestCompletedEventArgs(i, filePath, Path.Join(destination, fileName),
+            renamed ? FileIngestStatus.RENAMED : FileIngestStatus.COMPLETED);
     }
 }

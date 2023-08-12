@@ -5,16 +5,12 @@
 /// </summary>
 public class FileIngestCompletedEventArgs : EventArgs
 {
-    public FileIngestCompletedEventArgs(int fileNumber, string filePath, string newPath, bool skipped, bool renamed,
-        bool ruleMatched, bool ignored)
+    public FileIngestCompletedEventArgs(int fileNumber, string filePath, string newPath, FileIngestStatus status)
     {
         this.FileNumber = fileNumber;
         this.FilePath = filePath;
         this.NewPath = newPath;
-        this.Skipped = skipped;
-        this.Renamed = renamed;
-        this.RuleMatched = ruleMatched;
-        this.Ignored = ignored;
+        this.Status = status;
     }
 
     /// <summary>
@@ -33,22 +29,7 @@ public class FileIngestCompletedEventArgs : EventArgs
     public string NewPath { get; private set; }
 
     /// <summary>
-    ///     A boolean indicating if the file was skipped
+    ///     The status of the file Evaluation
     /// </summary>
-    public bool Skipped { get; private set; }
-
-    /// <summary>
-    ///     A boolean indicating if the file was renamed
-    /// </summary>
-    public bool Renamed { get; private set; }
-
-    /// <summary>
-    ///     A boolean indicating if the file matched a rule
-    /// </summary>
-    public bool RuleMatched { get; private set; }
-
-    /// <summary>
-    ///     A boolean indicating if the file was ignored
-    /// </summary>
-    public bool Ignored { get; }
+    public FileIngestStatus Status { get; private set; }
 }
