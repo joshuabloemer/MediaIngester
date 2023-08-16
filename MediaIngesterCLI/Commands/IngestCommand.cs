@@ -77,7 +77,7 @@ internal class IngestCommand : Command
 
         AnsiConsole.WriteLine($"Ingesting from {sourcePath} to {destinationPath}");
         await AnsiConsole.Progress()
-            .AutoRefresh(false)
+            .AutoRefresh(true)
             .Columns(new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn(),
                 new RemainingTimeColumn(), new SpinnerColumn())
             .StartAsync(async ctx =>
