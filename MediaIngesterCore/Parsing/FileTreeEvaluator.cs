@@ -1,46 +1,102 @@
 using MediaIngesterCore.Parsing.SyntaxTree;
+using Spectre.Console;
 
 namespace MediaIngesterCore.Parsing;
 
 public static class FileTreeEvaluator
 {
-    public static object Evaluate(SyntaxNode node)
+    private static void AddToChildren(TreeNode parent, List<TreeNode> children)
     {
-        switch (node)
+        foreach (TreeNode node in parent.Nodes) AddToChildren(node, children);
+        if (parent.Nodes.Count == 0) parent.AddNodes(children);
+    }
+
+    public static void MergeDuplicates(IHasTreeNodes node)
+    {
+    }
+
+    public static List<string> Evaluate(ProgramNode node)
+    {
+        return Evaluate(node.Block);
+    }
+
+    private static List<string> Evaluate(BlockNode block)
+    {
+        List<string> nodes = new();
+        foreach (RuleNode rule in block.Statements) nodes.AddRange(Evaluate(rule));
+
+        return nodes;
+    }
+
+    private static List<string> Evaluate(RuleNode rule)
+    {
+        List<string> result = new();
+        switch (rule.Path)
         {
-            case BlockNode b: return BlockNode(b);
-            case RuleNode r: return RuleNode(r);
-            case PathPartNode p: return $"path[{p.Part}]";
-            case MetadataNode m: return $"{m.Directory} - {m.Tag}";
+            case ExpressionNode e:
+
+                string path = Evaluate(e);
+                BlockNode? indent = rule.GetIndent();
+
+                if (indent is null)
+                {
+                    result.Add(path);
+                    break;
+                }
+
+                List<string> nodes = Evaluate(indent);
+                result.AddRange(nodes.Select(node => Path.Join(path, node)));
+                break;
+            case IgnoreNode:
+                break;
+            default:
+                throw new NotImplementedException(rule.Path.ToString());
         }
 
-        throw new Exception($"Unknown node type {node.GetType()}");
-    }
-
-
-    private static List<string> RuleNode(RuleNode r)
-    {
-        List<string> result = new();
-
-        if (r.GetIndent() is not null)
-            foreach (string path in (List<string>)Evaluate(r.GetIndent()))
-            {
-                // if (r.Path is not EmptyNode)
-                //     result.Add(Path.Join((string)Evaluate((PathNode)r.Path), path));
-                // else
-                //     result.Add(path);
-            }
-
-        // result.Add((string)Evaluate((PathNode)r.Path));
-        if (r.Under is not null) result.AddRange((List<string>)Evaluate(r.Under));
+        if (rule.Under is not null) result.AddRange(Evaluate(rule.Under));
 
         return result;
     }
 
-    private static List<string> BlockNode(BlockNode b)
+    private static string Evaluate(ExpressionNode expression)
     {
-        List<string> result = new();
-        foreach (RuleNode rule in b.Statements) result.AddRange((List<string>)Evaluate(rule));
-        return result;
+        return expression switch
+        {
+            PathPartNode p => Evaluate(p),
+            MetadataNode m => Evaluate(m),
+            LookupNode l => Evaluate(l),
+            ValueNode v => Evaluate(v),
+            _ => throw new NotImplementedException(expression.ToString())
+        };
+    }
+
+    private static string Evaluate(ValueNode valueNode)
+    {
+        return valueNode.Value.Aggregate("", (current, node) => Path.Join(current, node switch
+        {
+            LookupNode l => Evaluate(l),
+            LiteralNode l => Evaluate(l),
+            _ => throw new ArgumentOutOfRangeException(node.ToString())
+        }));
+    }
+
+    private static string Evaluate(LiteralNode literalNode)
+    {
+        return literalNode.Value;
+    }
+
+    private static string Evaluate(LookupNode lookupNode)
+    {
+        return $"{{{lookupNode.Name}}}";
+    }
+
+    private static string Evaluate(MetadataNode metadataNode)
+    {
+        return $"{{{metadataNode.Directory}:{metadataNode.Tag}:}}";
+    }
+
+    private static string Evaluate(PathPartNode pathPartNode)
+    {
+        return $"{{path[{pathPartNode.Part}]}}";
     }
 }

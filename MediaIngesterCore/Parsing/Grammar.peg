@@ -20,7 +20,7 @@ block<BlockNode>
 
 expression<ExpressionNode> 
   = "path[" p:("" [0-9\-]+) "]" {new PathPartNode(int.Parse(p))}
-  / d:(""[^":]+) ":"  t:(""[^:"}]+)":" {new MetadataNode(d,t)}
+  / d:  (""[^":\r\n]+) ":"  t:(""[^:"}\r\n]+)":" {new MetadataNode(d,t)}
   / lookup
   / value
   

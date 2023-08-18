@@ -96,8 +96,6 @@ internal class IngestCommand : Command
     private void ReportProgress(double progress)
     {
         this.progressTask?.Value(progress * 100);
-        // this.task.Description = $"[green]Ingesting file {progress*100:0.00}%[/]";
-        // task.Description = $"[green]Ingesting file {progress*100:0.00}%[/]";
     }
 
     private void OnFileIngestStarted(object? sender, FileIngestStartedEventArgs e)
@@ -117,7 +115,7 @@ internal class IngestCommand : Command
             FileIngestStatus.SKIPPED => "was skipped",
             FileIngestStatus.COMPLETED => $"was copied to {e.NewPath}",
             FileIngestStatus.UNSORTED => "was copied to the unsorted folder",
-            _ => throw new ArgumentOutOfRangeException()
+            _ => throw new ArgumentOutOfRangeException($"Unknown status {e.Status}")
         };
 
         AnsiConsole.WriteLine(message);
