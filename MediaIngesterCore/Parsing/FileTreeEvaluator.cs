@@ -50,7 +50,7 @@ public static class FileTreeEvaluator
             case IgnoreNode:
                 break;
             default:
-                throw new NotImplementedException(rule.Path.ToString());
+                throw new ArgumentOutOfRangeException(rule.Path.ToString());
         }
 
         if (rule.Under is not null) result.AddRange(Evaluate(rule.Under));
@@ -66,7 +66,7 @@ public static class FileTreeEvaluator
             MetadataNode m => Evaluate(m),
             LookupNode l => Evaluate(l),
             ValueNode v => Evaluate(v),
-            _ => throw new NotImplementedException(expression.ToString())
+            _ => throw new ArgumentOutOfRangeException(expression.ToString())
         };
     }
 
