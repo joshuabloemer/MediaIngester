@@ -73,10 +73,10 @@ _ = [\t ]+
 EOL = '\n' / '\r\n'
 
 INDENTATION
-  = spaces:" "* &{ spaces.Count == state["Indentation"] }
+  = indent: "\t"* &{ indent.Count == state["Indentation"] }
 
 INDENT
-  = #{ state["Indentation"] += 4; }
+  = #{ state["Indentation"] += 1; }
 
 UNDENT
-  = #{ state["Indentation"] -= 4; }
+  = #{ state["Indentation"] -= 1; }
