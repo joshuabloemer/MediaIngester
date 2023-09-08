@@ -44,7 +44,7 @@ public class PreviewDirectoryCommand : Command
         List<List<string>> splitPaths = new();
         foreach (string path in paths)
         {
-            List<string> splitPath = Regex.Split(path, "[\\\\/]").ToList();
+            List<string> splitPath = Regex.Split(path, @"[\\/]").ToList();
             splitPath.RemoveAt(0);
             splitPaths.Add(splitPath);
         }

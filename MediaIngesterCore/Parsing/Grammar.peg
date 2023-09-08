@@ -20,7 +20,7 @@ block<BlockNode>
 
 expression<ExpressionNode> 
   = "path[" p:("" [0-9\-]+) "]" {new PathPartNode(int.Parse(p))}
-  / d:  (""[^":\r\n]+) ":"  t:(""[^:"}\r\n]+)":" {new MetadataNode(d,t)}
+  / "[" d:(""[^"?:\r\n]+) ":"  t:(""[^\]"?}\r\n]+) "]"{new MetadataNode(d,t)}
   / lookup
   / value
   
@@ -51,10 +51,9 @@ rule<RuleNode>
 
 
 path<SyntaxNode>
-  = expression
-  / ignore
+  = ignore
   / empty
-
+  / expression
 ignore<IgnoreNode> = "!" {new IgnoreNode()}
 empty<ValueNode> = "?" {new ValueNode(new List<SyntaxNode>(1){new LiteralNode("")})}
 
