@@ -21,8 +21,9 @@ block<BlockNode>
 expression<ExpressionNode> 
   = "path[" p:("" [0-9\-]+) "]" {new PathPartNode(int.Parse(p))}
   / "[" d:(""[^"?:\r\n]+) ":"  t:(""[^\]"?}\r\n]+) "]"{new MetadataNode(d,t)}
-  / lookup
   / value
+  / lookup
+  
   
 
 assign<AssignNode> = name:varName " = " e:expression {new AssignNode(name,e)}      
