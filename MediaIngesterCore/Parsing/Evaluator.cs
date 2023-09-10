@@ -43,13 +43,15 @@ public class Evaluator
 
     public bool Ignore { get; private set; }
 
-    public bool RuleMatched { get; private set; } 
+    public bool RuleMatched { get; private set; }
 
-    public string? Evaluate(ProgramNode program)
+    public string Evaluate(ProgramNode program)
     {
         if (program.VarBlock is not null)
             this.Evaluate(program.VarBlock);
-        return this.Evaluate(program.Block);
+
+        return Regex.Replace(this.Evaluate(program.Block) ?? string.Empty, @"[\\/]",
+            Path.DirectorySeparatorChar.ToString());
     }
 
     private void Evaluate(VarBlockNode varBlock)
