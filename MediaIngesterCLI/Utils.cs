@@ -13,7 +13,7 @@ public static class Utils
 
             if (alreadyChecked.Contains(path)) continue;
 
-            IHasTreeNodes newNode = node.AddNode(path[0]);
+            IHasTreeNodes newNode = node.AddNode(path[0].EscapeMarkup());
             List<List<string>> newList = new();
             foreach (List<string> path2 in paths)
             {
