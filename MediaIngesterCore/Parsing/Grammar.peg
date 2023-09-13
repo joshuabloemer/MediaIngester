@@ -67,7 +67,7 @@ condition<ConditionNode>
   / (l:expression _? ('=='/"equals") _? r:expression) {new EqualsNode(l,r)}
   / (l:expression _? ('!='/"not equals")_? r:expression) {new NotEqualsNode(l,r)}
   / (l:expression _? "matches" _? r:expression) {new MatchesNode(l,r)}
-  / (l:expression _? "matches" _? r:expression) {new ContainsNode(l,r)}
+  / (l:expression _? "contains" _? r:expression) {new ContainsNode(l,r)}
 
 _ = [\t ]+
 EOL = '\n' / '\r\n'
