@@ -87,9 +87,11 @@ public class Evaluator
     private string Evaluate(MetadataNode metadataNode)
     {
         if (!this.metadata.TryGetValue(metadataNode.Directory, out Dictionary<string, string>? directory))
-            throw new MetadataNotFoundException("Metadata directory not found: " + metadataNode.Directory);
+            return string.Empty;
+        // throw new MetadataNotFoundException("Metadata directory not found: " + metadataNode.Directory);
         if (!directory.TryGetValue(metadataNode.Tag, out string? value))
-            throw new MetadataNotFoundException("Metadata tag not found: " + metadataNode.Tag);
+            // throw new MetadataNotFoundException("Metadata tag not found: " + metadataNode.Tag);
+            return string.Empty;
         return value;
     }
 
