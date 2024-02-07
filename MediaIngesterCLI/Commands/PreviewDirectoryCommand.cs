@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using System.Text.RegularExpressions;
 using MediaIngesterCore.Parsing;
 using MediaIngesterCore.Parsing.SyntaxTree;
 using Spectre.Console;
@@ -14,7 +15,7 @@ public class PreviewDirectoryCommand : Command
             "rules",
             "The rules file to use while ingesting");
 
-        AddArgument(rulesPath);
+        this.AddArgument(rulesPath);
         this.SetHandler(context =>
         {
             FileInfo rules = context.ParseResult.GetValueForArgument(rulesPath);
@@ -37,20 +38,20 @@ public class PreviewDirectoryCommand : Command
             return 1;
         }
 
-        List<string> paths = (List<string>)FileTreeEvaluator.Evaluate(rules.Block);
-
+        List<string> paths = FileTreeEvaluator.Evaluate(rules);
         paths.Sort();
         Tree? root = new("Destination");
         List<List<string>> splitPaths = new();
         foreach (string path in paths)
         {
-            List<string> splitPath = path.Split("/").ToList();
+            List<string> splitPath = Regex.Split(path, @"[\\/]").ToList();
             splitPath.RemoveAt(0);
             splitPaths.Add(splitPath);
         }
 
         Utils.CreateTreeRecursive(splitPaths, root);
         AnsiConsole.Write(root);
+
         return 0;
     }
 }

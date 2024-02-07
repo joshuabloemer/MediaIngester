@@ -1,11 +1,13 @@
 namespace MediaIngesterCore.Parsing.SyntaxTree.Conditions;
 
-public abstract class ConditionNode : SyntaxNode{
-    public SyntaxNode l {get;}
-    public SyntaxNode r {get;}
-    
-    public ConditionNode(SyntaxNode l, SyntaxNode r){
-        this.l = l;
-        this.r= r;
+public abstract class ConditionNode : SyntaxNode
+{
+    public ConditionNode(ExpressionNode? l, ExpressionNode? r)
+    {
+        this.L = l;
+        this.R = r;
     }
+
+    public ExpressionNode? L { get; }
+    public ExpressionNode? R { get; }
 }

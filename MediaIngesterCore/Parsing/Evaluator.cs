@@ -1,174 +1,194 @@
+using System.Text.RegularExpressions;
+using MediaIngesterCore.Parsing.Exceptions;
 using MediaIngesterCore.Parsing.SyntaxTree;
 using MediaIngesterCore.Parsing.SyntaxTree.Conditions;
-using MediaIngesterCore.Parsing.SyntaxTree.Conditions.Types;
 using MetadataExtractor;
 using static MediaIngesterCore.Utils;
+using Directory = MetadataExtractor.Directory;
 
-namespace MediaIngesterCore.Parsing
+namespace MediaIngesterCore.Parsing;
+
+public class Evaluator
 {
-    public class Evaluator
+    private readonly Dictionary<string, Dictionary<string, string>> metadata = new();
+
+    private readonly Dictionary<string, string> variables = new();
+
+    public Evaluator(string filePath)
     {
-        public string FilePath { get; }
+        DateTime dateTaken = GetDateTaken(filePath);
 
-        public Dictionary<String, Dictionary<String, String>> Metadata { get; } = new();
-
-        public DateTime DateTaken { get; }
-
-        public Boolean RuleMatched { get; private set; } = false;
-
-        public Evaluator(string filePath)
+        this.variables["year"] = dateTaken.Year.ToString();
+        this.variables["month"] = dateTaken.Month.ToString();
+        this.variables["day"] = dateTaken.Day.ToString();
+        this.variables["hour"] = dateTaken.Hour.ToString();
+        this.variables["minute"] = dateTaken.Minute.ToString();
+        this.variables["second"] = dateTaken.Second.ToString();
+        this.variables["file_name"] = Path.GetFileNameWithoutExtension(filePath);
+        this.variables["extension"] = Path.GetExtension(filePath)[1..];
+        this.variables["path"] = filePath;
+        try
         {
-            this.FilePath = filePath;
-            this.DateTaken = GetDateTaken(filePath);
-
-            try
+            IEnumerable<Directory> directories = ImageMetadataReader.ReadMetadata(filePath);
+            foreach (Directory directory in directories)
             {
-                IEnumerable<MetadataExtractor.Directory> directories = ImageMetadataReader.ReadMetadata(filePath);
-                foreach (var directory in directories)
-                {
-                    Metadata[directory.Name] = new Dictionary<String, String>();
-                    foreach (var tag in directory.Tags)
-                    {
-                        Metadata[directory.Name][tag.Name] = tag.Description!;
-                    }
-                }
+                this.metadata[directory.Name] = new Dictionary<string, string>();
+                foreach (Tag tag in directory.Tags) this.metadata[directory.Name][tag.Name] = tag.Description!;
             }
-            catch (ImageProcessingException) { }
+        }
+        catch (ImageProcessingException)
+        {
+        }
+    }
+
+    public bool Ignore { get; private set; }
+
+    public bool RuleMatched { get; private set; }
+
+    public string Evaluate(ProgramNode program)
+    {
+        if (program.VarBlock is not null)
+            this.Evaluate(program.VarBlock);
+
+        return Regex.Replace(this.Evaluate(program.Block) ?? string.Empty, @"[\\/]",
+            Path.DirectorySeparatorChar.ToString());
+    }
+
+    private void Evaluate(VarBlockNode varBlock)
+    {
+        foreach (AssignNode assign in varBlock.Statements) this.Evaluate(assign);
+    }
+
+    private void Evaluate(AssignNode assign)
+    {
+        this.variables[assign.Name] = this.Evaluate(assign.Value);
+    }
+
+    private string Evaluate(ExpressionNode expression)
+    {
+        return expression switch
+        {
+            PathPartNode p => this.Evaluate(p),
+            MetadataNode m => this.Evaluate(m),
+            LookupNode l => this.Evaluate(l),
+            ValueNode v => this.Evaluate(v),
+            _ => throw new NotImplementedException(expression.ToString())
+        };
+    }
+
+    private string Evaluate(PathPartNode pathPart)
+    {
+        string[] pathParts = this.variables["path"].Split("\\");
+        if (pathPart.Part >= 0)
+            return pathParts[pathPart.Part];
+        return pathParts[^Math.Abs(pathPart.Part)];
+    }
+
+    private string Evaluate(MetadataNode metadataNode)
+    {
+        if (!this.metadata.TryGetValue(metadataNode.Directory, out Dictionary<string, string>? directory))
+            return string.Empty;
+        // throw new MetadataNotFoundException("Metadata directory not found: " + metadataNode.Directory);
+        if (!directory.TryGetValue(metadataNode.Tag, out string? value))
+            // throw new MetadataNotFoundException("Metadata tag not found: " + metadataNode.Tag);
+            return string.Empty;
+        return value;
+    }
+
+    private string Evaluate(LookupNode lookup)
+    {
+        if (this.variables.TryGetValue(lookup.Name, out string? value)) return value;
+        throw new VariableNotDefinedException("Variable not defined: " + lookup.Name);
+    }
+
+    private string Evaluate(ValueNode value)
+    {
+        return value.Value.Aggregate("", (current, v) => current + v switch
+        {
+            LookupNode l => this.Evaluate(l),
+            LiteralNode l => this.Evaluate(l),
+            _ => throw new NotImplementedException(v.ToString())
+        });
+    }
+
+    private string Evaluate(LiteralNode literal)
+    {
+        return literal.Value;
+    }
+
+    public string? Evaluate(BlockNode block)
+    {
+        foreach (RuleNode statement in block.Statements)
+        {
+            string? result = this.Evaluate(statement);
+            if (result is not null) return result;
         }
 
-        public object Evaluate(SyntaxNode node)
-        {
-            switch (node)
-            {
-                case ProgramNode p: return Evaluate(p.Block);
-                case StringNode n: return n.Value;
-                case BlockNode b: return Block(b);
-                case PathNode p: return Path(p);
-                case RuleNode r: return Rule(r);
-                case AnyNode: return true;
-                case EqualsNode e: return Equals(e);
-                case NotNode n: return Not(n);
-                case LessThanNode l: return Less(l);
-                case GreaterThanNode g: return Greater(g);
-                case LessOrEqualNode l: return LessOrEqual(l);
-                case GreaterOrEqualNode g: return GreaterOrEqual(g);
-                case ContainsNode c: return ContainsNode(c);
-                case MetadataNode m: return MetadataNode(m);
-                case ExtensionNode: return System.IO.Path.GetExtension(this.FilePath).Remove(0, 1);
-                case YearNode: return this.DateTaken.Year.ToString();
-                case MonthNode: return this.DateTaken.Month.ToString("d2");
-                case DayNode: return this.DateTaken.Day.ToString("d2");
-                case HourNode: return this.DateTaken.Hour.ToString("d2");
-                case MinuteNode: return this.DateTaken.Minute.ToString("d2");
-                case SecondNode: return this.DateTaken.Second.ToString("d2");
-                case PathPartNode p: return PathPartNode(p);
-                case FileNameNode: return System.IO.Path.GetFileNameWithoutExtension(this.FilePath);
-                case PathNameNode: return this.FilePath;
-                case EmptyNode: return null;
-            }
-            throw (new Exception($"Unknown node type {node.GetType()}"));
-        }
+        return null;
+    }
 
-        private object ContainsNode(ContainsNode c)
-        {
-            string lhs = (string)Evaluate(c.l);
-            string rhs = (string)Evaluate(c.r);
-            return lhs.Contains(rhs);
-        }
-
-        private object PathPartNode(PathPartNode p)
-        {
-            string[] pathParts = this.FilePath.Split("\\");
-            if (p.Part >= 0)
-                return pathParts[p.Part];
-            else
-                return pathParts[^Math.Abs(p.Part)];
-        }
-
-        private object MetadataNode(MetadataNode m)
-        {
-
-            Dictionary<String, String> directory;
-            String tag;
-            if (this.Metadata.TryGetValue(m.Directory, out directory))
-            {
-                if (directory.TryGetValue(m.Tag, out tag))
-                {
-                    return tag;
-                }
-            }
-            return "null";
-        }
-
-        private object GreaterOrEqual(GreaterOrEqualNode g)
-        {
-            return Convert.ToDecimal(Evaluate(g.l)) >= Convert.ToDecimal(Evaluate(g.r));
-        }
-
-        private object LessOrEqual(LessOrEqualNode l)
-        {
-            return Convert.ToDecimal(Evaluate(l.l)) <= Convert.ToDecimal(Evaluate(l.r));
-        }
-
-        private object Greater(GreaterThanNode g)
-        {
-            return Convert.ToDecimal(Evaluate(g.l)) > Convert.ToDecimal(Evaluate(g.r));
-        }
-
-        private object Less(LessThanNode l)
-        {
-            return Convert.ToDecimal(Evaluate(l.l)) < Convert.ToDecimal(Evaluate(l.r));
-        }
-
-        private object Not(NotNode n)
-        {
-            return Convert.ToString(Evaluate(n.l)) != Convert.ToString(Evaluate(n.r));
-        }
-
-        private object Equals(EqualsNode e)
-        {
-            return Convert.ToString(Evaluate(e.l)) == Convert.ToString(Evaluate(e.r));
-        }
-
-        private string? Rule(RuleNode r)
-        {
-            string? result = null;
-            if ((bool)Evaluate(r.Condition))
-            {
-                result = (string)Evaluate(r.Path);
-                this.RuleMatched = true;
-                SyntaxNode indent = r.GetIndent();
-                if (indent is not null)
-                {
-                    result = System.IO.Path.Join(result, Convert.ToString(Evaluate(indent)));
-                }
-            }
-            else if (r.Under is not EmptyNode)
-            {
-                result = (string)(Evaluate(r.Under));
-            }
-            return result;
-        }
-
-        private string Path(PathNode p)
-        {
-            string result = "";
-            foreach (SyntaxNode part in p.Parts)
-            {
-                result = System.IO.Path.Join(result, Convert.ToString(Evaluate(part)));
-            }
-            return result;
-        }
-
-        private string? Block(BlockNode b)
-        {
-            string? result = null;
-            foreach (var statement in b.Statements)
-            {
-                result = (string)Evaluate(statement);   // use cast instead of Convert.ToString to allow for null return
-                if (result is not null) return result;
-            }
+    private string? Evaluate(RuleNode rule)
+    {
+        if (this.Ignore)
             return null;
+        string? result = null;
+        if (this.Evaluate(rule.Condition))
+        {
+            switch (rule.Path)
+            {
+                case ExpressionNode e:
+                    result = this.Evaluate(e);
+                    break;
+                case IgnoreNode:
+                    this.Ignore = true;
+                    return null;
+                default:
+                    throw new NotImplementedException(rule.Path.ToString());
+            }
+
+            this.RuleMatched = true;
+            BlockNode? indent = rule.GetIndent();
+            if (indent is not null) result = Path.Join(result, this.Evaluate(indent));
         }
+        else if (rule.Under is not null)
+        {
+            result = this.Evaluate(rule.Under);
+        }
+
+        return result;
+    }
+
+    private bool Evaluate(ConditionNode condition)
+    {
+        return condition switch
+        {
+            NotNode n => !this.Evaluate(n.Condition),
+            EqualsNode e => this.Evaluate(e),
+            NotEqualsNode n => this.Evaluate(n),
+            ContainsNode c => this.Evaluate(c),
+            MatchesNode m => this.Evaluate(m),
+            AnyNode => true,
+            _ => throw new NotImplementedException(condition.ToString())
+        };
+    }
+
+    private bool Evaluate(EqualsNode equals)
+    {
+        return this.Evaluate(equals.L!) == this.Evaluate(equals.R!);
+    }
+
+    private bool Evaluate(NotEqualsNode notEquals)
+    {
+        return this.Evaluate(notEquals.L!) != this.Evaluate(notEquals.R!);
+    }
+
+    private bool Evaluate(ContainsNode contains)
+    {
+        return this.Evaluate(contains.L!).Contains(this.Evaluate(contains.R!));
+    }
+
+    private bool Evaluate(MatchesNode matches)
+    {
+        return Regex.IsMatch(this.Evaluate(matches.L!), this.Evaluate(matches.R!));
     }
 }

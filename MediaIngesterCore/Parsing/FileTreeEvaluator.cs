@@ -1,80 +1,102 @@
 using MediaIngesterCore.Parsing.SyntaxTree;
-using MediaIngesterCore.Parsing.SyntaxTree.Conditions.Types;
+using Spectre.Console;
 
-namespace MediaIngesterCore.Parsing
+namespace MediaIngesterCore.Parsing;
+
+public static class FileTreeEvaluator
 {
-    public static class FileTreeEvaluator
+    private static void AddToChildren(TreeNode parent, List<TreeNode> children)
     {
-        public static object Evaluate(SyntaxNode node)
-        {
-            switch (node)
-            {
-                case BlockNode b: return BlockNode(b);
-                case RuleNode r: return RuleNode(r);
-                case PathNode p: return PathToString(p);
-                case StringNode s: return s.Value;
-                case ExtensionNode: return "extension";
-                case YearNode: return "YYYY";
-                case MonthNode: return "MM";
-                case DayNode: return "DD";
-                case HourNode: return "hh";
-                case MinuteNode: return "mm";
-                case SecondNode: return "ss";
-                case FileNameNode: return "file name";
-                case PathPartNode p: return $"path[{p.Part}]";
-                case PathNameNode: return "path";
-                case MetadataNode m: return $"{m.Directory} - {m.Tag}";
-            }
-            throw (new Exception($"Unknown node type {node.GetType()}"));
-        }
+        foreach (TreeNode node in parent.Nodes) AddToChildren(node, children);
+        if (parent.Nodes.Count == 0) parent.AddNodes(children);
+    }
 
-        private static string PathToString(PathNode path)
-        {
-            string result = "";
-            foreach (SyntaxNode part in path.Parts)
-            {
-                result = Path.Join(result, Convert.ToString(Evaluate(part)));
-            }
-            return result;
-            
-        }
+    public static void MergeDuplicates(IHasTreeNodes node)
+    {
+    }
 
-        private static List<string> RuleNode(RuleNode r)
-        {
-            
-            List<String> result = new List<string>();
+    public static List<string> Evaluate(ProgramNode node)
+    {
+        return Evaluate(node.Block);
+    }
 
-            if (r.GetIndent() is not null)
-            {
-                foreach (string path in (List<String>)Evaluate(r.GetIndent()))
+    private static List<string> Evaluate(BlockNode block)
+    {
+        List<string> nodes = new();
+        foreach (RuleNode rule in block.Statements) nodes.AddRange(Evaluate(rule));
+
+        return nodes;
+    }
+
+    private static List<string> Evaluate(RuleNode rule)
+    {
+        List<string> result = new();
+        switch (rule.Path)
+        {
+            case ExpressionNode e:
+
+                string path = Evaluate(e);
+                BlockNode? indent = rule.GetIndent();
+
+                if (indent is null)
                 {
-                    if (r.Path is not EmptyNode)
-                        result.Add(Path.Join((string)Evaluate((PathNode)r.Path), path));
-                    else
-                        result.Add(path);
+                    result.Add(path);
+                    break;
                 }
-            }
-            else
-            {
-                result.Add((string)Evaluate((PathNode)r.Path));
-            }
-            if (r.Under is not EmptyNode)
-            {
-                result.AddRange((List<String>)Evaluate(r.Under));
-            }
 
-            return result;
+                List<string> nodes = Evaluate(indent);
+                result.AddRange(nodes.Select(node => Path.Join(path, node)));
+                break;
+            case IgnoreNode:
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(rule.Path.ToString());
         }
 
-        private static List<String> BlockNode(BlockNode b)
+        if (rule.Under is not null) result.AddRange(Evaluate(rule.Under));
+
+        return result;
+    }
+
+    private static string Evaluate(ExpressionNode expression)
+    {
+        return expression switch
         {
-            List<String> result = new List<string>();
-            foreach (RuleNode rule in b.Statements)
-            {
-                result.AddRange((List<String>)Evaluate(rule));
-            }
-            return result;
+            PathPartNode p => Evaluate(p),
+            MetadataNode m => Evaluate(m),
+            LookupNode l => Evaluate(l),
+            ValueNode v => Evaluate(v),
+            _ => throw new ArgumentOutOfRangeException(expression.ToString())
+        };
+    }
 
-        }
+    private static string Evaluate(ValueNode valueNode)
+    {
+        return valueNode.Value.Aggregate("", (current, node) => Path.Join(current, node switch
+        {
+            LookupNode l => Evaluate(l),
+            LiteralNode l => Evaluate(l),
+            _ => throw new ArgumentOutOfRangeException(node.ToString())
+        }));
+    }
+
+    private static string Evaluate(LiteralNode literalNode)
+    {
+        return literalNode.Value;
+    }
+
+    private static string Evaluate(LookupNode lookupNode)
+    {
+        return $"{{{lookupNode.Name}}}";
+    }
+
+    private static string Evaluate(MetadataNode metadataNode)
+    {
+        return $"{{{metadataNode.Directory}:{metadataNode.Tag}:}}";
+    }
+
+    private static string Evaluate(PathPartNode pathPartNode)
+    {
+        return $"{{path[{pathPartNode.Part}]}}";
     }
 }

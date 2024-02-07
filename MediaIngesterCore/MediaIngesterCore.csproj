@@ -10,11 +10,11 @@
     <PackageReference Include="FastHashes" Version="3.5.0" />
     <PackageReference Include="MetadataExtractor" Version="2.8.0" />
     <PackageReference Include="Pegasus" Version="4.2.0-alpha0003" />
+    <PackageReference Include="Spectre.Console" Version="0.47.1-preview.0.5" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="File\" />
-    <Folder Include="Parsing\SyntaxTree\" />
   </ItemGroup>
 
   <ItemGroup>

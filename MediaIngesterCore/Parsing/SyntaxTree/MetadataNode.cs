@@ -1,14 +1,16 @@
 namespace MediaIngesterCore.Parsing.SyntaxTree;
 
-public class MetadataNode : SyntaxNode{
-    public string Directory {get;}
-
-    public string Tag {get;}
-
-    public MetadataNode(string directory, string tag){
+public class MetadataNode : ExpressionNode
+{
+    public MetadataNode(string directory, string tag)
+    {
         this.Directory = directory;
         this.Tag = tag;
     }
+
+    public string Directory { get; }
+
+    public string Tag { get; }
 
     public override string ToString()
     {

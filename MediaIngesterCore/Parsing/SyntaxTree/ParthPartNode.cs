@@ -1,9 +1,11 @@
 namespace MediaIngesterCore.Parsing.SyntaxTree;
 
-public class PathPartNode : SyntaxNode{
-    
-    public int Part {get;}
-    public PathPartNode(int part){
+public class PathPartNode : ExpressionNode
+{
+    public PathPartNode(int part)
+    {
         this.Part = part;
     }
+
+    public int Part { get; }
 }

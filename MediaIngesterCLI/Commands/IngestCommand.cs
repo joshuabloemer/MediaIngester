@@ -26,9 +26,9 @@ internal class IngestCommand : Command
             "rules",
             "The rules file to use while ingesting");
 
-        AddArgument(sourcePath);
-        AddArgument(destinationPath);
-        AddArgument(rulesPath);
+        this.AddArgument(sourcePath);
+        this.AddArgument(destinationPath);
+        this.AddArgument(rulesPath);
 
         CancellationTokenSource tokenSource = new();
         Console.CancelKeyPress += (sender, eventArgs) =>
@@ -44,7 +44,7 @@ internal class IngestCommand : Command
             DirectoryInfo source = context.ParseResult.GetValueForArgument(sourcePath);
             DirectoryInfo destination = context.ParseResult.GetValueForArgument(destinationPath);
             FileInfo rules = context.ParseResult.GetValueForArgument(rulesPath);
-            int exitCode = await Ingest(source, destination, rules, cToken);
+            int exitCode = await this.Ingest(source, destination, rules, cToken);
             context.ExitCode = exitCode;
         });
     }
@@ -53,7 +53,7 @@ internal class IngestCommand : Command
         CancellationToken token)
     {
         Parser parser = new();
-        SyntaxNode rules;
+        ProgramNode rules;
         try
         {
             rules = parser.Parse(await File.ReadAllTextAsync(rulesPath.FullName, token));
@@ -64,30 +64,30 @@ internal class IngestCommand : Command
             return 1;
         }
 
-        job = new IngestJob(sourcePath.FullName, destinationPath.FullName, rules);
-        if (!job.ScanDirectory())
+        this.job = new IngestJob(sourcePath.FullName, destinationPath.FullName, rules);
+        if (!this.job.ScanDirectory())
         {
             await Console.Error.WriteLineAsync($"No files found in source directory \"{sourcePath}\"");
             return 1;
         }
 
-        Ingester ingester = new(job);
-        ingester.FileIngestCompleted += OnFileIngestCompleted;
-        ingester.FileIngestStarted += OnFileIngestStarted;
+        Ingester ingester = new(this.job);
+        ingester.FileIngestCompleted += this.OnFileIngestCompleted;
+        ingester.FileIngestStarted += this.OnFileIngestStarted;
 
         AnsiConsole.WriteLine($"Ingesting from {sourcePath} to {destinationPath}");
         await AnsiConsole.Progress()
-            .AutoRefresh(false)
+            .AutoRefresh(true)
             .Columns(new TaskDescriptionColumn(), new ProgressBarColumn(), new PercentageColumn(),
                 new RemainingTimeColumn(), new SpinnerColumn())
             .StartAsync(async ctx =>
             {
-                progressContext = ctx;
+                this.progressContext = ctx;
                 string message =
-                    $"{"0".PadLeft((int)Math.Floor(Math.Log10(job.TotalFiles) + 1), '0')}/{job.TotalFiles}";
+                    $"{"0".PadLeft((int)Math.Floor(Math.Log10(this.job.TotalFiles) + 1), '0')}/{this.job.TotalFiles}";
                 ProgressTask task = ctx.AddTask($"[green]Ingesting file {message}[/]");
-                progressTask = task;
-                IProgress<double> progress = new Progress<double>(ReportProgress);
+                this.progressTask = task;
+                IProgress<double> progress = new Progress<double>(this.ReportProgress);
                 await ingester.Ingest(token, new ManualResetEvent(true), progress);
             });
         return 0;
@@ -95,28 +95,30 @@ internal class IngestCommand : Command
 
     private void ReportProgress(double progress)
     {
-        progressTask?.Value(progress * 100);
-        // this.task.Description = $"[green]Ingesting file {progress*100:0.00}%[/]";
-        // task.Description = $"[green]Ingesting file {progress*100:0.00}%[/]";
+        this.progressTask?.Value(progress * 100);
     }
 
     private void OnFileIngestStarted(object? sender, FileIngestStartedEventArgs e)
     {
         string message =
-            $"{(e.FileNumber + 1).ToString().PadLeft((int)Math.Floor(Math.Log10(job.TotalFiles) + 1), '0')}/{job.TotalFiles}";
-        progressTask!.Description = $"[green]Ingesting file {message}[/]";
+            $"{(e.FileNumber + 1).ToString().PadLeft((int)Math.Floor(Math.Log10(this.job.TotalFiles) + 1), '0')}/{this.job.TotalFiles}";
+        this.progressTask!.Description = $"[green]Ingesting file {message}[/]";
     }
 
     private void OnFileIngestCompleted(object? sender, FileIngestCompletedEventArgs e)
     {
         string message = $"File {e.FileNumber + 1} ({e.FilePath}) ";
-        if (e.Skipped)
-            message += "was skipped";
-        else if (e.Renamed)
-            message += $"was copied and renamed to {e.NewPath}";
-        else
-            message += $"was copied to {e.NewPath}";
+        message += e.Status switch
+        {
+            FileIngestStatus.IGNORED => "was ignored",
+            FileIngestStatus.RENAMED => $"was renamed to {e.NewPath}",
+            FileIngestStatus.SKIPPED => "was skipped",
+            FileIngestStatus.COMPLETED => $"was copied to {e.NewPath}",
+            FileIngestStatus.UNSORTED => "was copied to the unsorted folder",
+            _ => throw new ArgumentOutOfRangeException($"Unknown status {e.Status}")
+        };
+
         AnsiConsole.WriteLine(message);
-        progressContext?.Refresh();
+        this.progressContext?.Refresh();
     }
 }
