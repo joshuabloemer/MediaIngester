@@ -11,9 +11,7 @@ public class PreviewDirectoryCommand : Command
     public PreviewDirectoryCommand() : base("directory",
         "Prints the ingest location of a directory without ingesting it")
     {
-        Argument<FileInfo> rulesPath = new(
-            "rules",
-            "The rules file to use while ingesting");
+        Argument<FileInfo> rulesPath = new Argument<FileInfo>("rules", "The rules file to use while ingesting");
 
         this.AddArgument(rulesPath);
         this.SetHandler(context =>
@@ -26,7 +24,7 @@ public class PreviewDirectoryCommand : Command
 
     private static int PreviewDirectory(FileInfo rulesPath)
     {
-        Parser parser = new();
+        Parser parser = new Parser();
         ProgramNode rules;
         try
         {
@@ -40,8 +38,8 @@ public class PreviewDirectoryCommand : Command
 
         List<string> paths = FileTreeEvaluator.Evaluate(rules);
         paths.Sort();
-        Tree? root = new("Destination");
-        List<List<string>> splitPaths = new();
+        Tree? root = new Tree("Destination");
+        List<List<string>> splitPaths = new List<List<string>>();
         foreach (string path in paths)
         {
             List<string> splitPath = Regex.Split(path, @"[\\/]").ToList();

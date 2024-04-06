@@ -21,7 +21,7 @@ public class Ingester
     /// <summary>
     ///     The status of the ingest
     /// </summary>
-    public IngestStatus Status { get; private set; } = IngestStatus.Ready;
+    public IngestStatus Status { get; private set; } = IngestStatus.READY;
 
     /// <summary>
     ///     Raised when a file copy is started
@@ -49,21 +49,21 @@ public class Ingester
     public Task Ingest(CancellationToken cancellationToken, ManualResetEvent resetEvent,
         IProgress<double>? progress = null)
     {
-        if (this.Status != IngestStatus.Ready)
+        if (this.Status != IngestStatus.READY)
             throw new InvalidOperationException("Cannot start ingest while ingest is in progress");
         return Task.Run(() =>
         {
             try
             {
-                this.Status = IngestStatus.Ingesting;
+                this.Status = IngestStatus.INGESTING;
                 for (int i = 0; i < this.Job.Files.Count; i++)
                 {
-                    if (!resetEvent.WaitOne(0)) this.Status = IngestStatus.Paused;
+                    if (!resetEvent.WaitOne(0)) this.Status = IngestStatus.PAUSED;
                     resetEvent.WaitOne();
-                    this.Status = IngestStatus.Ingesting;
+                    this.Status = IngestStatus.INGESTING;
                     if (cancellationToken.IsCancellationRequested)
                     {
-                        this.Status = IngestStatus.Canceled;
+                        this.Status = IngestStatus.CANCELED;
                         cancellationToken.ThrowIfCancellationRequested();
                     }
 
@@ -74,11 +74,11 @@ public class Ingester
                     progress?.Report((i + 1d) / this.Job.Files.Count);
                 }
 
-                this.Status = IngestStatus.Completed;
+                this.Status = IngestStatus.COMPLETED;
             }
             catch
             {
-                this.Status = IngestStatus.Failed;
+                this.Status = IngestStatus.FAILED;
                 throw;
             }
         }, cancellationToken);
@@ -86,7 +86,7 @@ public class Ingester
 
     private FileIngestCompletedEventArgs IngestFile(string filePath, int i)
     {
-        Evaluator evaluator = new(filePath);
+        Evaluator evaluator = new Evaluator(filePath);
         string? destination = evaluator.Evaluate(this.Job.Rules);
 
         if (evaluator.Ignore)

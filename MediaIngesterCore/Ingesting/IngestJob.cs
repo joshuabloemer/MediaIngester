@@ -17,7 +17,7 @@ public class IngestJob
     /// </summary>
     public readonly string DirectoryPath;
 
-    private readonly List<string> files = new();
+    private readonly List<string> files = new List<string>();
 
     /// <summary>
     ///     The rules to match against while ingesting

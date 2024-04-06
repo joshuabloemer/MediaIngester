@@ -6,7 +6,7 @@ public static class Utils
 {
     public static void CreateTreeRecursive(List<List<string>> paths, IHasTreeNodes node)
     {
-        List<List<string>> alreadyChecked = new();
+        List<List<string>> alreadyChecked = new List<List<string>>();
         foreach (List<string> path in paths)
         {
             if (path.Count == 0) continue;
@@ -14,7 +14,7 @@ public static class Utils
             if (alreadyChecked.Contains(path)) continue;
 
             IHasTreeNodes newNode = node.AddNode(path[0].EscapeMarkup());
-            List<List<string>> newList = new();
+            List<List<string>> newList = new List<List<string>>();
             foreach (List<string> path2 in paths)
             {
                 if (path2.Count == 0) continue;

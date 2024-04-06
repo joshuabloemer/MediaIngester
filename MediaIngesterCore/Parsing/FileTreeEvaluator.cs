@@ -4,17 +4,7 @@ using Spectre.Console;
 namespace MediaIngesterCore.Parsing;
 
 public static class FileTreeEvaluator
-{
-    private static void AddToChildren(TreeNode parent, List<TreeNode> children)
-    {
-        foreach (TreeNode node in parent.Nodes) AddToChildren(node, children);
-        if (parent.Nodes.Count == 0) parent.AddNodes(children);
-    }
-
-    public static void MergeDuplicates(IHasTreeNodes node)
-    {
-    }
-
+{ 
     public static List<string> Evaluate(ProgramNode node)
     {
         return Evaluate(node.Block);
@@ -22,7 +12,7 @@ public static class FileTreeEvaluator
 
     private static List<string> Evaluate(BlockNode block)
     {
-        List<string> nodes = new();
+        List<string> nodes = new List<string>();
         foreach (RuleNode rule in block.Statements) nodes.AddRange(Evaluate(rule));
 
         return nodes;
@@ -30,7 +20,7 @@ public static class FileTreeEvaluator
 
     private static List<string> Evaluate(RuleNode rule)
     {
-        List<string> result = new();
+        List<string> result = new List<string>();
         switch (rule.Path)
         {
             case ExpressionNode e:

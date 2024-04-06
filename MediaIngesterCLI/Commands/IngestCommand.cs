@@ -14,23 +14,17 @@ internal class IngestCommand : Command
 
     public IngestCommand() : base("ingest", "Ingest a folder")
     {
-        Argument<DirectoryInfo> sourcePath = new(
-            "source",
-            "The source directory to ingest from");
+        Argument<DirectoryInfo> sourcePath = new Argument<DirectoryInfo>("source", "The source directory to ingest from");
 
-        Argument<DirectoryInfo> destinationPath = new(
-            "destination",
-            "The destination directory to ingest to");
+        Argument<DirectoryInfo> destinationPath = new Argument<DirectoryInfo>("destination", "The destination directory to ingest to");
 
-        Argument<FileInfo> rulesPath = new(
-            "rules",
-            "The rules file to use while ingesting");
+        Argument<FileInfo> rulesPath = new Argument<FileInfo>("rules", "The rules file to use while ingesting");
 
         this.AddArgument(sourcePath);
         this.AddArgument(destinationPath);
         this.AddArgument(rulesPath);
 
-        CancellationTokenSource tokenSource = new();
+        CancellationTokenSource tokenSource = new CancellationTokenSource();
         Console.CancelKeyPress += (sender, eventArgs) =>
         {
             Console.WriteLine("Cancelling ingest...");
@@ -52,7 +46,7 @@ internal class IngestCommand : Command
     private async Task<int> Ingest(DirectoryInfo sourcePath, DirectoryInfo destinationPath, FileInfo rulesPath,
         CancellationToken token)
     {
-        Parser parser = new();
+        Parser parser = new Parser();
         ProgramNode rules;
         try
         {
@@ -71,7 +65,7 @@ internal class IngestCommand : Command
             return 1;
         }
 
-        Ingester ingester = new(this.job);
+        Ingester ingester = new Ingester(this.job);
         ingester.FileIngestCompleted += this.OnFileIngestCompleted;
         ingester.FileIngestStarted += this.OnFileIngestStarted;
 

@@ -14,7 +14,7 @@ public abstract class SyntaxNode
 
     public string PrettyPrint()
     {
-        StringBuilder sb = new();
+        StringBuilder sb = new StringBuilder();
         this.Render(sb);
         return sb.ToString();
     }
@@ -28,8 +28,8 @@ public abstract class SyntaxNode
         {
             IList? list = (IList)prop?.GetValue(this);
             foreach (object? item in list)
-                if (item is SyntaxNode)
-                    ((SyntaxNode)item).Render(sb, padding + "  ");
+                if (item is SyntaxNode node)
+                    node.Render(sb, padding + "  ");
         }
 
         IEnumerable<PropertyInfo> nodeProperties = this.GetType().GetProperties()

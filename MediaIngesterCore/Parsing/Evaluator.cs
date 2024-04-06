@@ -10,9 +10,9 @@ namespace MediaIngesterCore.Parsing;
 
 public class Evaluator
 {
-    private readonly Dictionary<string, Dictionary<string, string>> metadata = new();
+    private readonly Dictionary<string, Dictionary<string, string>> metadata = new Dictionary<string, Dictionary<string, string>>();
 
-    private readonly Dictionary<string, string> variables = new();
+    private readonly Dictionary<string, string> variables = new Dictionary<string, string>();
 
     public Evaluator(string filePath)
     {

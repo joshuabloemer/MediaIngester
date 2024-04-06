@@ -8,13 +8,9 @@ public class PreviewFileCommand : Command
 {
     public PreviewFileCommand() : base("file", "Prints the ingest location of a file without ingesting it")
     {
-        Argument<FileInfo> previewFilePath = new(
-            "file",
-            "The file to preview");
+        Argument<FileInfo> previewFilePath = new Argument<FileInfo>("file", "The file to preview");
 
-        Argument<FileInfo> rulesPath = new(
-            "rules",
-            "The rules file to use while ingesting");
+        Argument<FileInfo> rulesPath = new Argument<FileInfo>("rules", "The rules file to use while ingesting");
 
         this.AddArgument(previewFilePath);
         this.AddArgument(rulesPath);
@@ -29,7 +25,7 @@ public class PreviewFileCommand : Command
 
     private static int PreviewFile(FileInfo filePath, FileInfo rulesPath)
     {
-        Parser parser = new();
+        Parser parser = new Parser();
         ProgramNode rules;
         try
         {
@@ -41,7 +37,7 @@ public class PreviewFileCommand : Command
             return 1;
         }
 
-        Evaluator evaluator = new(filePath.FullName);
+        Evaluator evaluator = new Evaluator(filePath.FullName);
         string? result = evaluator.Evaluate(rules);
         if (evaluator.Ignore)
         {
